@@ -9,7 +9,7 @@
 // ============================================
 let currentTheme = 'dark';
 let currentCoverUrl = null;
-let totalDuration = 225; // 默认 3:45
+let totalDuration = 205; // 默认 3:25
 let currentPalette = [];
 let albumPalette = []; // 保存从专辑封面提取的颜色
 
@@ -76,7 +76,8 @@ function initializeElements() {
     elements.lyricsFontSize = document.getElementById('lyricsFontSize');
     elements.translationFontSize = document.getElementById('translationFontSize');
     elements.reviewFontSize = document.getElementById('reviewFontSize');
-    elements.lyricsLines = document.getElementById('lyricsLines');
+    elements.reviewMetaFontSize = document.getElementById('reviewMetaFontSize');
+    elements.lyricsLineGap = document.getElementById('lyricsLineGap');
     elements.lyricsHeight = document.getElementById('lyricsHeight');
     elements.lyricsFade = document.getElementById('lyricsFade');
     elements.reviewBoxWidth = document.getElementById('reviewBoxWidth');
@@ -102,7 +103,8 @@ function initializeElements() {
     elements.lyricsFontSizeValue = document.getElementById('lyricsFontSizeValue');
     elements.translationFontSizeValue = document.getElementById('translationFontSizeValue');
     elements.reviewFontSizeValue = document.getElementById('reviewFontSizeValue');
-    elements.lyricsLinesValue = document.getElementById('lyricsLinesValue');
+    elements.reviewMetaFontSizeValue = document.getElementById('reviewMetaFontSizeValue');
+    elements.lyricsLineGapValue = document.getElementById('lyricsLineGapValue');
     elements.lyricsHeightValue = document.getElementById('lyricsHeightValue');
     elements.lyricsFadeValue = document.getElementById('lyricsFadeValue');
     elements.reviewBoxWidthValue = document.getElementById('reviewBoxWidthValue');
@@ -343,13 +345,16 @@ function initializeEventListeners() {
     elements.lyricsFontSize.addEventListener('input', updateStyles);
     elements.translationFontSize.addEventListener('input', updateStyles);
     elements.reviewFontSize.addEventListener('input', updateStyles);
-    elements.lyricsLines.addEventListener('input', () => { updateStyles(); updateLyrics(); });
+    elements.lyricsLineGap.addEventListener('input', () => { updateStyles(); updateLyrics(); });
     elements.lyricsHeight.addEventListener('input', updateStyles);
     elements.lyricsFade.addEventListener('input', updateStyles);
     elements.reviewBoxWidth.addEventListener('input', updateStyles);
     elements.reviewBoxHeight.addEventListener('input', updateStyles);
     elements.reviewBgOpacity.addEventListener('input', updateStyles);
     elements.borderRadius.addEventListener('input', updateStyles);
+    elements.progressBarHeight.addEventListener('input', updateStyles);
+    elements.progressTimeFontSize.addEventListener('input', updateStyles);
+    elements.reviewMetaFontSize.addEventListener('input', updateStyles);
     elements.blurStrength.addEventListener('input', updateStyles);
     elements.titleGray.addEventListener('input', updateStyles);
     elements.artistGray.addEventListener('input', updateStyles);
@@ -660,6 +665,28 @@ function updateLyrics() {
     
     // Apply font and size settings to newly rendered lyrics
     applyLyricsStyles();
+    
+    // Center current lyric in the container
+    centerCurrentLyric();
+}
+
+function centerCurrentLyric() {
+    const container = elements.lyricsContainer;
+    const panel = elements.lyricsPanel;
+    const currentLine = container.querySelector('.current-line');
+    
+    if (!currentLine) return;
+    
+    // Get panel height
+    const panelHeight = panel.clientHeight;
+    
+    // Calculate offset to center current lyric
+    const currentLineTop = currentLine.offsetTop;
+    const currentLineHeight = currentLine.offsetHeight;
+    const centerOffset = currentLineTop - (panelHeight / 2) + (currentLineHeight / 2);
+    
+    // Apply transform to container to scroll
+    container.style.transform = `translateY(${-centerOffset}px)`;
 }
 
 function applyLyricsStyles() {
@@ -690,6 +717,20 @@ function applyLyricsStyles() {
     const translationFont = elements.translationFont.value;
     document.querySelectorAll('.lyric-translation').forEach(el => {
         el.style.fontFamily = `"${translationFont}", sans-serif`;
+    });
+    
+    // Apply line gap
+    const lineGap = elements.lyricsLineGap.value + 'px';
+    elements.lyricsContainer.style.gap = lineGap;
+    
+    // Apply gray scale
+    const lyricsGray = elements.lyricsGray.value;
+    const translationGray = elements.translationGray.value;
+    document.querySelectorAll('.lyric-text').forEach(el => {
+        el.style.color = `rgb(${lyricsGray}, ${lyricsGray}, ${lyricsGray})`;
+    });
+    document.querySelectorAll('.lyric-translation').forEach(el => {
+        el.style.color = `rgb(${translationGray}, ${translationGray}, ${translationGray})`;
     });
 }
 
@@ -729,13 +770,10 @@ function parseLyrics(lyricsText) {
 
 function renderLyricsHTML(lyrics, currentTime, showTranslation) {
     if (lyrics.length === 0) {
-        return `<div class="lyric-line">
-            <p class="lyric-text">暂无歌词</p>
+        return `<div class="lyric-line current-line">
+            <p class="lyric-text current">暂无歌词</p>
         </div>`;
     }
-    
-    // Get max lines from slider (now always odd: 3, 5, 7, 9)
-    const maxLines = parseInt(elements.lyricsLines.value) || 5;
     
     // Find current lyric index
     let currentIndex = 0;
@@ -745,29 +783,13 @@ function renderLyricsHTML(lyrics, currentTime, showTranslation) {
         }
     }
     
-    // For odd number display, center current lyric with equal lines above and below
-    const linesBeforeCurrent = Math.floor(maxLines / 2);
-    const linesAfterCurrent = Math.floor(maxLines / 2);
-    
-    let startIndex = currentIndex - linesBeforeCurrent;
-    let endIndex = currentIndex + linesAfterCurrent + 1;
-    
-    // Adjust if we're at the beginning or end
-    if (startIndex < 0) {
-        startIndex = 0;
-        endIndex = Math.min(lyrics.length, maxLines);
-    }
-    if (endIndex > lyrics.length) {
-        endIndex = lyrics.length;
-        startIndex = Math.max(0, endIndex - maxLines);
-    }
-    
+    // Render ALL lyrics, the CSS will handle centering current one
     let html = '';
-    for (let i = startIndex; i < endIndex; i++) {
+    for (let i = 0; i < lyrics.length; i++) {
         const lyric = lyrics[i];
         const isCurrent = i === currentIndex;
         
-        html += `<div class="lyric-line">
+        html += `<div class="lyric-line ${isCurrent ? 'current-line' : ''}" data-index="${i}">
             <p class="lyric-text ${isCurrent ? 'current' : ''}">${lyric.text}</p>
             ${showTranslation && lyric.translation ? `<p class="lyric-translation">${lyric.translation}</p>` : ''}
         </div>`;
@@ -852,7 +874,8 @@ function updateStyles() {
     elements.lyricsFontSizeValue.textContent = elements.lyricsFontSize.value;
     elements.translationFontSizeValue.textContent = elements.translationFontSize.value;
     elements.reviewFontSizeValue.textContent = elements.reviewFontSize.value;
-    elements.lyricsLinesValue.textContent = elements.lyricsLines.value;
+    elements.reviewMetaFontSizeValue.textContent = elements.reviewMetaFontSize.value;
+    elements.lyricsLineGapValue.textContent = elements.lyricsLineGap.value;
     elements.lyricsHeightValue.textContent = elements.lyricsHeight.value;
     elements.lyricsFadeValue.textContent = elements.lyricsFade.value;
     elements.reviewBoxWidthValue.textContent = elements.reviewBoxWidth.value;
@@ -911,6 +934,11 @@ function updateStyles() {
     // Apply review font size
     const reviewFontSize = elements.reviewFontSize.value + 'px';
     elements.displayReviewContent.style.fontSize = reviewFontSize;
+    
+    // Apply review meta (watermark/date) font size
+    const reviewMetaFontSize = elements.reviewMetaFontSize.value + 'px';
+    elements.displayReviewAuthor.style.fontSize = reviewMetaFontSize;
+    elements.displayReviewDate.style.fontSize = reviewMetaFontSize;
     
     // Apply lyrics height
     const lyricsHeight = elements.lyricsHeight.value + '%';
@@ -1327,50 +1355,19 @@ function refreshInkColors() {
 // Export Screenshot
 // ============================================
 
-// Helper function to draw rounded rectangle
-function drawRoundedRect(ctx, x, y, width, height, radius) {
+// Helper function to draw rounded rectangle path
+function roundedRectPath(ctx, x, y, width, height, radius) {
     ctx.beginPath();
     ctx.moveTo(x + radius, y);
     ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.arcTo(x + width, y, x + width, y + radius, radius);
     ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
     ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.arcTo(x, y + height, x, y + height - radius, radius);
     ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.arcTo(x, y, x + radius, y, radius);
     ctx.closePath();
-}
-
-// Helper function to apply blur to an image using StackBlur algorithm (simplified)
-function createBlurredImage(img, blurRadius) {
-    const tempCanvas = document.createElement('canvas');
-    const scale = 1.15;
-    tempCanvas.width = 3840 * scale;
-    tempCanvas.height = 2160 * scale;
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    // Draw scaled image
-    const imgRatio = img.width / img.height;
-    const canvasRatio = tempCanvas.width / tempCanvas.height;
-    let drawWidth, drawHeight, drawX, drawY;
-    
-    if (imgRatio > canvasRatio) {
-        drawHeight = tempCanvas.height;
-        drawWidth = drawHeight * imgRatio;
-        drawX = (tempCanvas.width - drawWidth) / 2;
-        drawY = 0;
-    } else {
-        drawWidth = tempCanvas.width;
-        drawHeight = drawWidth / imgRatio;
-        drawX = 0;
-        drawY = (tempCanvas.height - drawHeight) / 2;
-    }
-    
-    tempCtx.filter = `blur(${blurRadius}px)`;
-    tempCtx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-    
-    return tempCanvas;
 }
 
 async function exportScreenshot() {
@@ -1385,80 +1382,97 @@ async function exportScreenshot() {
         const albumImg = elements.albumArt;
         const reviewPanel = elements.reviewPanel;
         
-        // Get current positions and sizes
+        // Store original styles
+        const originalTransform = container.style.transform;
+        
+        // Remove transform for accurate capture
+        container.style.transform = 'none';
+        
+        // Wait for layout to settle
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Get positions after transform removal
         const containerRect = container.getBoundingClientRect();
         const albumRect = albumContainer.getBoundingClientRect();
         const reviewRect = reviewPanel.getBoundingClientRect();
         
-        // Calculate scale factor from preview to 4K
-        const currentScale = parseFloat(container.style.transform.replace('scale(', '').replace(')', '')) || 1;
-        const scaleX = 3840 / containerRect.width * currentScale;
-        const scaleY = 2160 / containerRect.height * currentScale;
+        // Calculate positions in 4K coordinates
+        const scaleX = 3840 / containerRect.width;
+        const scaleY = 2160 / containerRect.height;
         
-        // Store original styles
-        const originalTransform = container.style.transform;
-        const originalAlbumBoxShadow = getComputedStyle(albumContainer).boxShadow;
-        const originalReviewBoxShadow = getComputedStyle(reviewPanel).boxShadow;
+        const albumX = (albumRect.left - containerRect.left) * scaleX;
+        const albumY = (albumRect.top - containerRect.top) * scaleY;
+        const albumWidth = parseInt(elements.coverSize.value);
+        const albumHeight = albumWidth;
+        const borderRadius = parseInt(elements.borderRadius.value);
         
-        // Prepare for capture - remove transform and shadows (we'll add them manually)
-        container.style.transform = 'none';
-        albumContainer.style.boxShadow = 'none';
-        reviewPanel.style.boxShadow = 'none';
+        const reviewX = (reviewRect.left - containerRect.left) * scaleX;
+        const reviewY = (reviewRect.top - containerRect.top) * scaleY;
+        const reviewWidth = reviewRect.width * scaleX;
+        const reviewHeight = reviewRect.height * scaleY;
         
-        // Wait for styles to apply
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Create the final canvas
+        // Create final canvas
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = 3840;
         finalCanvas.height = 2160;
         const ctx = finalCanvas.getContext('2d');
         
-        // Get album position after transform removal
-        const newContainerRect = container.getBoundingClientRect();
-        const newAlbumRect = albumContainer.getBoundingClientRect();
-        const newReviewRect = reviewPanel.getBoundingClientRect();
-        
-        // Calculate album position in 4K coordinates
-        const albumX = (newAlbumRect.left - newContainerRect.left) / newContainerRect.width * 3840;
-        const albumY = (newAlbumRect.top - newContainerRect.top) / newContainerRect.height * 2160;
-        const albumWidth = parseInt(elements.coverSize.value);
-        const albumHeight = albumWidth;
-        const borderRadius = parseInt(elements.borderRadius.value);
-        
-        // Calculate review position in 4K coordinates
-        const reviewX = (newReviewRect.left - newContainerRect.left) / newContainerRect.width * 3840;
-        const reviewY = (newReviewRect.top - newContainerRect.top) / newContainerRect.height * 2160;
-        const reviewWidth = newReviewRect.width / newContainerRect.width * 3840;
-        const reviewHeight = newReviewRect.height / newContainerRect.height * 2160;
-        
-        // Step 1: Draw background
+        // ========== Step 1: Draw Background ==========
         if (currentTheme === 'dark') {
-            // Dark theme: draw solid color first
+            // Dark theme: first fill with base color
             ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, 3840, 2160);
             
-            // Draw blurred album cover as background
-            if (currentCoverUrl && albumImg.complete) {
+            // Draw blurred album cover if available
+            if (currentCoverUrl && albumImg.complete && albumImg.naturalWidth > 0) {
                 const blurRadius = parseInt(elements.blurStrength.value);
-                const blurredCanvas = createBlurredImage(albumImg, blurRadius);
                 
-                // Draw blurred image with opacity
+                // Create a temporary canvas for the blurred background
+                const bgCanvas = document.createElement('canvas');
+                bgCanvas.width = 4416; // 3840 * 1.15
+                bgCanvas.height = 2484; // 2160 * 1.15
+                const bgCtx = bgCanvas.getContext('2d');
+                
+                // Fill with dark color first
+                bgCtx.fillStyle = '#0a0a0a';
+                bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+                
+                // Calculate cover dimensions to fill and overflow
+                const imgRatio = albumImg.naturalWidth / albumImg.naturalHeight;
+                const canvasRatio = bgCanvas.width / bgCanvas.height;
+                let drawW, drawH, drawX, drawY;
+                
+                if (imgRatio > canvasRatio) {
+                    drawH = bgCanvas.height;
+                    drawW = drawH * imgRatio;
+                } else {
+                    drawW = bgCanvas.width;
+                    drawH = drawW / imgRatio;
+                }
+                drawX = (bgCanvas.width - drawW) / 2;
+                drawY = (bgCanvas.height - drawH) / 2;
+                
+                // Draw image with blur
+                bgCtx.filter = `blur(${blurRadius}px)`;
+                bgCtx.drawImage(albumImg, drawX, drawY, drawW, drawH);
+                bgCtx.filter = 'none';
+                
+                // Draw blurred background centered with opacity
                 ctx.globalAlpha = 0.7;
-                ctx.drawImage(blurredCanvas, -3840 * 0.075, -2160 * 0.075, 3840 * 1.15, 2160 * 1.15);
+                ctx.drawImage(bgCanvas, -288, -162, 4416, 2484); // Offset to center
                 ctx.globalAlpha = 1.0;
                 
-                // Draw overlay
+                // Dark overlay
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.fillRect(0, 0, 3840, 2160);
             }
         } else {
-            // Light theme: capture the ink background
+            // Light theme: simple background color
             ctx.fillStyle = '#F8F6F0';
             ctx.fillRect(0, 0, 3840, 2160);
         }
         
-        // Step 2: Capture the content without shadows using html2canvas
+        // ========== Step 2: Capture content with html2canvas ==========
         const contentCanvas = await html2canvas(container, {
             width: 3840,
             height: 2160,
@@ -1470,73 +1484,70 @@ async function exportScreenshot() {
             windowWidth: 3840,
             windowHeight: 2160,
             onclone: function(clonedDoc) {
-                const clonedContainer = clonedDoc.getElementById('previewContainer');
                 const clonedAlbum = clonedDoc.getElementById('albumArtContainer');
                 const clonedReview = clonedDoc.getElementById('reviewPanel');
                 const clonedDynamicBg = clonedDoc.getElementById('dynamicBg');
                 const clonedOverlay = clonedDoc.getElementById('overlayLayer');
                 const clonedBgLayer = clonedDoc.getElementById('bgLayer');
                 
-                // Make background layers transparent so we can draw them manually
+                // For dark theme, hide dynamic backgrounds (we draw them manually)
                 if (currentTheme === 'dark') {
-                    if (clonedDynamicBg) clonedDynamicBg.style.display = 'none';
-                    if (clonedOverlay) clonedOverlay.style.display = 'none';
+                    if (clonedDynamicBg) clonedDynamicBg.style.opacity = '0';
+                    if (clonedOverlay) clonedOverlay.style.background = 'transparent';
                     if (clonedBgLayer) clonedBgLayer.style.background = 'transparent';
                 }
+                // Light theme: keep bgLayer as-is for ink background
                 
+                // Hide album (we'll draw it with proper rounding)
                 if (clonedAlbum) {
-                    clonedAlbum.style.boxShadow = 'none';
-                    clonedAlbum.style.overflow = 'hidden';
-                    clonedAlbum.style.borderRadius = elements.borderRadius.value + 'px';
+                    clonedAlbum.style.visibility = 'hidden';
                 }
                 
+                // Hide review panel shadow (we draw it manually)
                 if (clonedReview) {
                     clonedReview.style.boxShadow = 'none';
                 }
             }
         });
         
-        // Step 3: Draw album shadow BEFORE content
+        // ========== Step 3: Draw album shadow ==========
         ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-        ctx.shadowBlur = 80;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+        ctx.shadowBlur = 100;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 40;
-        ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-        drawRoundedRect(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
+        ctx.shadowOffsetY = 50;
+        ctx.fillStyle = '#000000';
+        roundedRectPath(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
         ctx.fill();
         ctx.restore();
         
-        // Step 4: Draw review panel shadow BEFORE content
+        // ========== Step 4: Draw review panel shadow ==========
         ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
-        ctx.shadowBlur = 30;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        ctx.shadowBlur = 50;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 10;
-        ctx.fillStyle = currentTheme === 'dark' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.6)';
-        const reviewBorderRadius = 16;
-        drawRoundedRect(ctx, reviewX, reviewY, reviewWidth, reviewHeight, reviewBorderRadius);
+        ctx.shadowOffsetY = 20;
+        ctx.fillStyle = currentTheme === 'dark' ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.65)';
+        roundedRectPath(ctx, reviewX, reviewY, reviewWidth, reviewHeight, 16);
         ctx.fill();
         ctx.restore();
         
-        // Step 5: Draw content canvas on top (which has the album with proper border-radius)
+        // ========== Step 5: Draw html2canvas content ==========
         ctx.drawImage(contentCanvas, 0, 0);
         
-        // Step 6: Re-draw the album cover with proper rounded corners to fix any clipping issues
-        if (albumImg.complete && albumImg.src) {
+        // ========== Step 6: Draw album cover with perfect rounded corners ==========
+        if (albumImg.complete && albumImg.src && albumImg.naturalWidth > 0) {
             ctx.save();
-            drawRoundedRect(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
+            roundedRectPath(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
             ctx.clip();
             ctx.drawImage(albumImg, albumX, albumY, albumWidth, albumHeight);
             ctx.restore();
         }
         
-        // Restore original styles
+        // Restore original transform
         container.style.transform = originalTransform;
-        albumContainer.style.boxShadow = originalAlbumBoxShadow;
-        reviewPanel.style.boxShadow = originalReviewBoxShadow;
         
-        // Create download link
+        // Create download
         const link = document.createElement('a');
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
         const title = elements.trackTitle.value || 'music_summary';
@@ -1574,7 +1585,7 @@ function saveSettings() {
         lyricsFontSize: elements.lyricsFontSize.value,
         translationFontSize: elements.translationFontSize.value,
         reviewFontSize: elements.reviewFontSize.value,
-        lyricsLines: elements.lyricsLines.value,
+        lyricsLineGap: elements.lyricsLineGap.value,
         lyricsHeight: elements.lyricsHeight.value,
         lyricsFade: elements.lyricsFade.value,
         reviewBoxWidth: elements.reviewBoxWidth.value,
@@ -1638,7 +1649,7 @@ function loadSettings() {
         if (settings.lyricsFontSize) elements.lyricsFontSize.value = settings.lyricsFontSize;
         if (settings.translationFontSize) elements.translationFontSize.value = settings.translationFontSize;
         if (settings.reviewFontSize) elements.reviewFontSize.value = settings.reviewFontSize;
-        if (settings.lyricsLines) elements.lyricsLines.value = settings.lyricsLines;
+        if (settings.lyricsLineGap) elements.lyricsLineGap.value = settings.lyricsLineGap;
         if (settings.lyricsHeight) elements.lyricsHeight.value = settings.lyricsHeight;
         if (settings.lyricsFade) elements.lyricsFade.value = settings.lyricsFade;
         if (settings.reviewBoxWidth) elements.reviewBoxWidth.value = settings.reviewBoxWidth;

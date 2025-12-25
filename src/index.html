@@ -28,8 +28,8 @@
                 <section class="config-section">
                     <h2 class="section-title">主题设置</h2>
                     <div class="theme-buttons">
-                        <button class="theme-btn" data-theme="dark">深色主题</button>
-                        <button class="theme-btn active" data-theme="light">浅色主题</button>
+                        <button class="theme-btn active" data-theme="dark">深色主题</button>
+                        <button class="theme-btn" data-theme="light">浅色主题</button>
                     </div>
                 </section>
 
@@ -147,12 +147,12 @@
                         <input type="range" id="coverSize" min="600" max="1600" value="1200" step="50">
                     </div>
                     <div class="slider-group">
-                        <label for="titleArtistGap">标题-歌手间距: <span id="titleArtistGapValue">16</span>px</label>
-                        <input type="range" id="titleArtistGap" min="0" max="80" value="16" step="4">
+                        <label for="titleArtistGap">标题-歌手间距: <span id="titleArtistGapValue">32</span>px</label>
+                        <input type="range" id="titleArtistGap" min="0" max="80" value="32" step="4">
                     </div>
                     <div class="slider-group">
-                        <label for="metadataCoverGap">标题-封面间距: <span id="metadataCoverGapValue">100</span>px</label>
-                        <input type="range" id="metadataCoverGap" min="20" max="150" value="100" step="10">
+                        <label for="metadataCoverGap">标题-封面间距: <span id="metadataCoverGapValue">70</span>px</label>
+                        <input type="range" id="metadataCoverGap" min="20" max="150" value="70" step="10">
                     </div>
                     <div class="slider-group">
                         <label for="coverProgressGap">封面-进度条间距: <span id="coverProgressGapValue">150</span>px</label>
@@ -179,8 +179,12 @@
                         <input type="range" id="reviewFontSize" min="20" max="80" value="54" step="2">
                     </div>
                     <div class="slider-group">
-                        <label for="lyricsLines">歌词显示行数: <span id="lyricsLinesValue">5</span></label>
-                        <input type="range" id="lyricsLines" min="3" max="9" value="5" step="2">
+                        <label for="reviewMetaFontSize">水印/日期字号: <span id="reviewMetaFontSizeValue">24</span>px</label>
+                        <input type="range" id="reviewMetaFontSize" min="14" max="40" value="24" step="2">
+                    </div>
+                    <div class="slider-group">
+                        <label for="lyricsLineGap">歌词行间距: <span id="lyricsLineGapValue">40</span>px</label>
+                        <input type="range" id="lyricsLineGap" min="10" max="80" value="40" step="5">
                     </div>
                     <div class="slider-group">
                         <label for="lyricsHeight">歌词区域高度: <span id="lyricsHeightValue">60</span>%</label>
@@ -207,15 +211,16 @@
                         <input type="range" id="borderRadius" min="0" max="120" value="48" step="4">
                     </div>
                     <div class="slider-group">
-                        <label for="progressBarHeight">进度条粗细: <span id="progressBarHeightValue">8</span>px</label>
-                        <input type="range" id="progressBarHeight" min="4" max="24" value="8" step="2">
+                        <label for="progressBarHeight">进度条粗细: <span id="progressBarHeightValue">12</span>px</label>
+                        <input type="range" id="progressBarHeight" min="4" max="24" value="12" step="2">
                     </div>
                     <div class="slider-group">
-                        <label for="progressTimeFontSize">进度时间字号: <span id="progressTimeFontSizeValue">28</span>px</label>
-                        <input type="range" id="progressTimeFontSize" min="16" max="48" value="28" step="2">
+                        <label for="progressTimeFontSize">进度时间字号: <span
+                                id="progressTimeFontSizeValue">32</span>px</label>
+                        <input type="range" id="progressTimeFontSize" min="16" max="72" value="32" step="2">
                     </div>
                     <div class="slider-group">
-                        <label for="blurStrength">背景模糊: <span id="blurStrengthValue">90</span>px</label>
+                        <label for="blurStrength">背景模糊（深色模式生效）: <span id="blurStrengthValue">90</span>px</label>
                         <input type="range" id="blurStrength" min="40" max="150" value="90" step="10">
                     </div>
 
@@ -349,7 +354,7 @@
                         <span>输出分辨率: 3840 x 2160 </span>
                     </div>
                     <button class="export-btn" id="exportBtn">导出截图 (PNG)</button>
-                    <button class="refresh-btn" id="refreshBgBtn">刷新背景</button>
+                    <button class="refresh-btn" id="refreshBgBtn">刷新背景（浅色模式生效）</button>
                 </section>
             </div>
         </aside>

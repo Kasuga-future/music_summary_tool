@@ -559,9 +559,9 @@ htmlbody {
     flex: 0 0 50%;
     overflow: hidden;
     margin-bottom: 40px;
-    padding-top: 40px;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
+    padding-top: 0;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
     position: relative;
 }
 
@@ -576,7 +576,9 @@ htmlbody {
 .lyrics-container {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 40px;
+    transition: transform 0.3s ease-out;
+    padding: 200px 0;
 }
 
 .lyric-line {
