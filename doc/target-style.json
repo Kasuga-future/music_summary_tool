@@ -1,11 +1,11 @@
 {
     "project_meta": {
-        "name": "music_summary_layout",
+        "name": "Summary sample - Avid Preset (Review Layout)",
         "target_resolution": {
             "width": 3840,
             "height": 2160
         },
-        "description": "A responsive music player layout engine configuration based on Image 1 visuals with Image 2 control logic."
+        "description": "Modified layout with split right-panel: Top for Lyrics, Bottom for Personal Review."
     },
     "layout_preset": {
         "visual_style": {
@@ -18,7 +18,7 @@
             },
             "typography": {
                 "font_family_main": "'Noto Sans JP', 'Roboto', sans-serif",
-                "font_family_fallback": "sans-serif",
+                "font_family_review": "'Ma Shan Zheng', 'KaiTi', serif",
                 "color_primary": "#333333",
                 "color_secondary": "#666666",
                 "color_accent": "#8C8C8C"
@@ -28,171 +28,161 @@
             "container": {
                 "display": "flex",
                 "flex_direction": "row",
-                "align_items": "center",
-                "justify_content": "center",
                 "padding": "120px"
+            },
+            "left_column": {
+                "width_percent": 45,
+                "display": "flex",
+                "align_items": "center",
+                "justify_content": "center"
+            },
+            "right_column": {
+                "width_percent": 55,
+                "display": "flex",
+                "flex_direction": "column",
+                "justify_content": "space-between",
+                "padding_left_px": 120
             },
             "album_art": {
                 "width_px": 1100,
                 "height_px": 1100,
                 "border_radius_px": 24,
-                "shadow": "0 40px 80px rgba(0,0,0,0.25)",
-                "margin_right_px": 240
+                "shadow": "0 40px 80px rgba(0,0,0,0.25)"
+            },
+            "metadata_panel": {
+                "height_percent": 15,
+                "margin_bottom_px": 40
             },
             "lyrics_panel": {
-                "width_px": 1400,
-                "text_align": "left",
-                "active_line_scale": 1.2,
-                "inactive_line_opacity": 0.4,
-                "line_height": 1.8
+                "height_percent": 40,
+                "overflow": "hidden",
+                "mask_image": "linear-gradient(to bottom, black 80%, transparent 100%)",
+                "margin_bottom_px": 60
             },
-            "controls_bar": {
-                "position": "absolute",
-                "bottom_px": 180,
-                "width_percent": 80,
-                "items_gap_px": 60
+            "review_panel": {
+                "height_percent": 35,
+                "background": "rgba(255, 255, 255, 0.4)",
+                "border_radius_px": 16,
+                "padding_px": 40,
+                "display": "flex",
+                "align_items": "flex-start",
+                "justify_content": "flex-start"
             }
         }
     },
     "control_logic": {
-        "section_canvas": {
-            "label": "界面设置 (Canvas Settings)",
+        "section_layout_split": {
+            "label": "布局分区 (Layout Split)",
             "controls": [
                 {
-                    "id": "canvas_width",
-                    "label": "宽 (Width)",
-                    "type": "number",
-                    "default": 3840,
-                    "min": 1280,
-                    "max": 7680
+                    "id": "lyrics_height_ratio",
+                    "label": "歌词区域占比 (Lyrics Area %)",
+                    "type": "slider",
+                    "default": 40,
+                    "min": 20,
+                    "max": 70,
+                    "step": 5
                 },
                 {
-                    "id": "canvas_height",
-                    "label": "高 (Height)",
-                    "type": "number",
-                    "default": 2160,
-                    "min": 720,
-                    "max": 4320
+                    "id": "review_height_ratio",
+                    "label": "评价区域占比 (Review Area %)",
+                    "type": "slider",
+                    "default": 35,
+                    "min": 10,
+                    "max": 60,
+                    "step": 5
+                },
+                {
+                    "id": "column_gap",
+                    "label": "左右栏间距 (Column Gap px)",
+                    "type": "slider",
+                    "default": 120,
+                    "min": 50,
+                    "max": 300,
+                    "step": 10
                 }
             ]
         },
-        "section_visibility": {
-            "label": "元素显示 (Element Visibility)",
+        "section_review": {
+            "label": "个人评价设置 (Personal Review)",
             "controls": [
                 {
-                    "id": "show_album_art",
-                    "label": "显示封面 (Show Album Art)",
-                    "type": "boolean",
-                    "default": true,
-                    "target_element": ".album-art-container"
-                },
-                {
-                    "id": "show_lyrics",
-                    "label": "显示歌词 (Show Lyrics)",
-                    "type": "boolean",
-                    "default": true,
-                    "target_element": ".lyrics-container"
-                },
-                {
-                    "id": "show_translation",
-                    "label": "显示翻译 (Show Translation)",
-                    "type": "boolean",
-                    "default": true,
-                    "condition": "has_translation_data"
-                },
-                {
-                    "id": "show_progress_bar",
-                    "label": "显示进度条 (Show Progress Bar)",
-                    "type": "boolean",
-                    "default": true,
-                    "target_element": ".progress-bar-container"
-                },
-                {
-                    "id": "enable_blur_bg",
-                    "label": "背景模糊/流光 (Background Blur/Flow)",
-                    "type": "boolean",
-                    "default": true,
-                    "css_class_toggle": "bg-blur-active"
-                }
-            ]
-        },
-        "section_playback": {
-            "label": "播放控件 (Playback Controls)",
-            "controls": [
-                {
-                    "id": "show_random_play",
-                    "label": "显示随机播放 (Show Shuffle)",
+                    "id": "show_review",
+                    "label": "显示评价 (Show Review)",
                     "type": "boolean",
                     "default": true
                 },
                 {
-                    "id": "show_loop_play",
-                    "label": "显示循环播放 (Show Loop)",
-                    "type": "boolean",
-                    "default": true
+                    "id": "review_font_size",
+                    "label": "评价字号 (Review Font Size)",
+                    "type": "slider",
+                    "default": 1.8,
+                    "unit": "em",
+                    "min": 1.0,
+                    "max": 4.0,
+                    "step": 0.1
+                },
+                {
+                    "id": "review_bg_opacity",
+                    "label": "背景透明度 (Box Opacity)",
+                    "type": "slider",
+                    "default": 0.4,
+                    "min": 0,
+                    "max": 1,
+                    "step": 0.1
+                },
+                {
+                    "id": "review_font_family",
+                    "label": "评价字体 (Review Font)",
+                    "type": "select",
+                    "options": [
+                        "Serif (Songti)",
+                        "Handwritten",
+                        "Sans-serif"
+                    ],
+                    "default": "Serif (Songti)"
                 }
             ]
         },
         "section_typography": {
-            "label": "排版细节 (Typography & Layout)",
+            "label": "歌词排版 (Lyrics Typography)",
             "controls": [
                 {
                     "id": "lyrics_lines_count",
-                    "label": "歌词行数 (Lyric Lines)",
+                    "label": "可见行数 (Visible Lines)",
                     "type": "slider",
-                    "default": 5,
+                    "default": 4,
                     "min": 1,
-                    "max": 12,
-                    "step": 1
+                    "max": 8,
+                    "step": 1,
+                    "description": "Reduced default to fit top half"
                 },
                 {
                     "id": "font_size_main",
-                    "label": "字体大小 (Font Size)",
+                    "label": "歌词大小 (Font Size)",
                     "type": "slider",
                     "default": 2,
                     "unit": "em",
                     "min": 1,
                     "max": 5,
                     "step": 0.1
+                }
+            ]
+        },
+        "section_visibility": {
+            "label": "基础元素 (Basic Elements)",
+            "controls": [
+                {
+                    "id": "show_album_art",
+                    "label": "显示封面",
+                    "type": "boolean",
+                    "default": true
                 },
                 {
-                    "id": "font_family_select",
-                    "label": "字体 (Font Family)",
-                    "type": "select",
-                    "options": [
-                        "Default (Sans-serif)",
-                        "Serif",
-                        "Impact",
-                        "Mono"
-                    ],
-                    "default": "Default (Sans-serif)"
-                },
-                {
-                    "id": "album_art_scale",
-                    "label": "封面大小 (Cover Size %)",
-                    "type": "slider",
-                    "default": 90,
-                    "min": 20,
-                    "max": 150,
-                    "step": 5
-                },
-                {
-                    "id": "lyrics_margin_left",
-                    "label": "画布留白 (Margin/Padding px)",
-                    "type": "slider",
-                    "default": 100,
-                    "min": 0,
-                    "max": 500,
-                    "step": 10
-                },
-                {
-                    "id": "translation_spacing",
-                    "label": "翻译间距 (Translation Spacing px)",
-                    "type": "slider",
-                    "default": 10,
-                    "min": 0,
-                    "max": 50,
-                    "step": 2
+                    "id": "show_progress_bar",
+                    "label": "显示进度条",
+                    "type": "boolean",
+                    "default": true
                 }
             ]
         }
@@ -200,32 +190,26 @@
     "mock_data": {
         "track_info": {
             "title": "Avid",
-            "artist": "SawanoHiroyuki[nZk]:mizuki",
-            "album": "Avid / Hands Up to the Sky",
-            "meta": {
-                "codec": "FLAC 24 bits",
-                "sample_rate": "44.1 kHz",
-                "lyricist": "cAnON.",
-                "composer": "澤野弘之",
-                "arranger": "澤野弘之"
-            }
+            "artist": "SawanoHiroyuki[nZk]:mizuki"
         },
         "lyrics_snippet": [
             {
-                "time": "00:00",
                 "text": "か弱い光が指差す先",
                 "trans": "依稀可见一道微弱的光线所向"
             },
             {
-                "time": "00:10",
                 "text": "Silent haze 霞みがちに捉える影",
                 "trans": "悄烟悄蔓 那身影不时浓烟中奋战"
             },
             {
-                "time": "00:20",
                 "text": "6/8(ハチロク)のリズム 掻き乱さ",
                 "trans": "6/8拍的节奏 被扰乱"
             }
-        ]
+        ],
+        "personal_review": {
+            "content": "《Avid》这首歌展现了泽野弘之标志性的宏大编曲与mizuki空灵嗓音的完美结合。钢琴的前奏如同晨雾般迷离，随着鼓点的切入，情感层层递进。这不仅仅是一首动画配乐，更像是一场关于寻找与救赎的内心独白，非常适合在深夜静听。",
+            "author": "MusicLover",
+            "date": "2023.10.24"
+        }
     }
 }
