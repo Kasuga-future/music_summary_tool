@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐总结 - Music Summary</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- html2canvas for screenshot -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- color-thief for extracting colors from album cover -->
+    <script src="https://cdn.jsdelivr.net/npm/colorthief@2.4.0/dist/color-thief.umd.js"></script>
+    <!-- jsmediatags for ID3 parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar - Configuration Panel -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>🎵 音乐总结</h1>
+                <p class="subtitle">年度音乐评选工具</p>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Mode Selection -->
+                <section class="config-section">
+                    <h2 class="section-title">模式选择</h2>
+                    <div class="mode-buttons">
+                        <button class="mode-btn active" data-mode="player">播放器模式</button>
+                        <button class="mode-btn" data-mode="review">评价模式</button>
+                        <button class="mode-btn" data-mode="artist">歌手/专辑模式</button>
+                    </div>
+                </section>
+
+                <!-- Theme Selection -->
+                <section class="config-section">
+                    <h2 class="section-title">主题设置</h2>
+                    <div class="theme-buttons">
+                        <button class="theme-btn active" data-theme="dark">深色主题</button>
+                        <button class="theme-btn" data-theme="light">浅色主题</button>
+                    </div>
+                </section>
+
+                <!-- File Upload -->
+                <section class="config-section">
+                    <h2 class="section-title">文件上传</h2>
+                    <div class="upload-group">
+                        <label class="upload-btn">
+                            <span>🎵 上传音频文件</span>
+                            <input type="file" id="audioInput" accept=".mp3,.wav,.flac,.ogg,.m4a" hidden>
+                        </label>
+                        <span id="audioFileName" class="file-name">未选择文件</span>
+                    </div>
+                    <div class="upload-group">
+                        <label class="upload-btn">
+                            <span>🖼️ 上传封面图片</span>
+                            <input type="file" id="coverInput" accept="image/*" hidden>
+                        </label>
+                        <span id="coverFileName" class="file-name">未选择文件</span>
+                    </div>
+                </section>
+
+                <!-- Track Information -->
+                <section class="config-section">
+                    <h2 class="section-title">歌曲信息</h2>
+                    <div class="input-group">
+                        <label for="trackTitle">歌曲名称</label>
+                        <input type="text" id="trackTitle" placeholder="输入歌曲名称">
+                    </div>
+                    <div class="input-group">
+                        <label for="artistName">歌手/艺术家</label>
+                        <input type="text" id="artistName" placeholder="输入歌手名称">
+                    </div>
+                    <div class="input-group">
+                        <label for="albumName">专辑名称</label>
+                        <input type="text" id="albumName" placeholder="输入专辑名称">
+                    </div>
+                </section>
+
+                <!-- Lyrics Input -->
+                <section class="config-section">
+                    <h2 class="section-title">歌词设置</h2>
+                    <div class="input-group">
+                        <label for="lyricsInput">歌词内容 (LRC格式)</label>
+                        <textarea id="lyricsInput" rows="6"
+                            placeholder="[00:00.00]歌词第一行&#10;[00:05.00]歌词第二行&#10;支持时间戳和翻译"></textarea>
+                    </div>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="showLyrics" checked>
+                            显示歌词
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showTranslation" checked>
+                            显示翻译
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Progress Control -->
+                <section class="config-section">
+                    <h2 class="section-title">播放进度</h2>
+                    <div class="progress-control">
+                        <input type="range" id="progressSlider" min="0" max="100" value="30">
+                        <div class="time-display">
+                            <span id="currentTime">0:00</span>
+                            <span id="totalTime">3:25</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Review Section (for review mode) -->
+                <section class="config-section" id="reviewSection">
+                    <h2 class="section-title">个人评价</h2>
+                    <div class="input-group">
+                        <label for="reviewTitle">评价标题</label>
+                        <input type="text" id="reviewTitle" placeholder="输入评价标题">
+                    </div>
+                    <div class="input-group">
+                        <label for="reviewContent">评价内容</label>
+                        <textarea id="reviewContent" rows="4" placeholder="输入您对这首歌的评价..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="reviewAuthor">署名</label>
+                        <input type="text" id="reviewAuthor" placeholder="输入署名">
+                    </div>
+                </section>
+
+                <!-- Visibility Settings -->
+                <section class="config-section">
+                    <h2 class="section-title">元素显示</h2>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="showAlbumArt" checked>
+                            显示封面
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showProgressBar" checked>
+                            显示进度条
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showControls" checked>
+                            显示控制按钮
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showMetadata" checked>
+                            显示歌曲信息
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Style Settings -->
+                <section class="config-section">
+                    <h2 class="section-title">样式调整</h2>
+                    <div class="slider-group">
+                        <label for="coverSize">封面大小: <span id="coverSizeValue">1100</span>px</label>
+                        <input type="range" id="coverSize" min="600" max="1600" value="1100" step="50">
+                    </div>
+                    <div class="slider-group">
+                        <label for="lyricsFontSize">歌词字号: <span id="lyricsFontSizeValue">48</span>px</label>
+                        <input type="range" id="lyricsFontSize" min="24" max="96" value="48" step="2">
+                    </div>
+                    <div class="slider-group">
+                        <label for="borderRadius">圆角大小: <span id="borderRadiusValue">24</span>px</label>
+                        <input type="range" id="borderRadius" min="0" max="100" value="24" step="4">
+                    </div>
+                    <div class="slider-group">
+                        <label for="blurStrength">背景模糊: <span id="blurStrengthValue">80</span>px</label>
+                        <input type="range" id="blurStrength" min="0" max="200" value="80" step="10">
+                    </div>
+                </section>
+
+                <!-- Output Settings -->
+                <section class="config-section">
+                    <h2 class="section-title">输出设置</h2>
+                    <div class="resolution-info">
+                        <span>输出分辨率: 3840 × 2160 (4K)</span>
+                    </div>
+                    <button class="export-btn" id="exportBtn">📷 导出截图 (PNG)</button>
+                    <button class="refresh-btn" id="refreshBgBtn">🔄 刷新背景</button>
+                </section>
+            </div>
+        </aside>
+
+        <!-- Right Preview Area -->
+        <main class="preview-area">
+            <div class="preview-container" id="previewContainer">
+                <!-- Background Layers -->
+                <div class="bg-layer" id="bgLayer"></div>
+                <div class="dynamic-bg" id="dynamicBg"></div>
+                <div class="overlay-layer" id="overlayLayer"></div>
+
+                <!-- Player Mode Content -->
+                <div class="preview-content player-mode" id="playerContent">
+                    <div class="left-column">
+                        <div class="album-art-container" id="albumArtContainer">
+                            <img src="" alt="Album Cover" id="albumArt" class="album-art">
+                        </div>
+                    </div>
+                    <div class="right-column">
+                        <div class="metadata-panel" id="metadataPanel">
+                            <h2 class="track-title" id="displayTitle">歌曲名称</h2>
+                            <p class="artist-name" id="displayArtist">艺术家</p>
+                        </div>
+                        <div class="lyrics-panel" id="lyricsPanel">
+                            <div class="lyrics-container" id="lyricsContainer">
+                                <!-- Lyrics will be rendered here -->
+                            </div>
+                        </div>
+                        <div class="progress-panel" id="progressPanel">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                                </div>
+                                <div class="progress-time">
+                                    <span id="displayCurrentTime">0:00</span>
+                                    <span id="displayTotalTime">3:45</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="controls-panel" id="controlsPanel">
+                            <button class="control-btn">⏮️</button>
+                            <button class="control-btn play-btn">▶️</button>
+                            <button class="control-btn">⏭️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review Mode Content -->
+                <div class="preview-content review-mode hidden" id="reviewContent">
+                    <div class="left-column">
+                        <div class="album-art-container" id="albumArtContainerReview">
+                            <img src="" alt="Album Cover" id="albumArtReview" class="album-art">
+                        </div>
+                    </div>
+                    <div class="right-column">
+                        <div class="metadata-panel" id="metadataPanelReview">
+                            <h2 class="track-title" id="displayTitleReview">歌曲名称</h2>
+                            <p class="artist-name" id="displayArtistReview">艺术家</p>
+                        </div>
+                        <div class="lyrics-panel review-lyrics" id="lyricsPanelReview">
+                            <div class="lyrics-container" id="lyricsContainerReview">
+                                <!-- Lyrics will be rendered here -->
+                            </div>
+                        </div>
+                        <div class="review-panel" id="reviewPanel">
+                            <h3 class="review-title" id="displayReviewTitle">评价标题</h3>
+                            <p class="review-text" id="displayReviewContent">在这里输入您对这首歌曲的评价...</p>
+                            <p class="review-author" id="displayReviewAuthor">— 署名</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Artist/Album Mode Content -->
+                <div class="preview-content artist-mode hidden" id="artistContent">
+                    <div class="artist-center">
+                        <div class="artist-image-container" id="artistImageContainer">
+                            <img src="" alt="Artist Photo" id="artistImage" class="artist-image">
+                        </div>
+                        <div class="artist-info">
+                            <h1 class="artist-title" id="displayArtistTitle">歌手名称</h1>
+                            <p class="artist-subtitle" id="displayArtistSubtitle">专辑 / 年份</p>
+                            <div class="artist-review" id="artistReviewPanel">
+                                <p class="artist-review-text" id="displayArtistReview">在这里输入您对这位歌手或专辑的评价...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scale indicator -->
+            <div class="scale-indicator" id="scaleIndicator">
+                预览比例: <span id="scaleValue">100%</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden canvas for export -->
+    <canvas id="exportCanvas" style="display: none;"></canvas>
+
+    <script src="colorLibrary.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
