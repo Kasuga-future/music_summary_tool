@@ -147,6 +147,10 @@
                         <input type="range" id="coverSize" min="600" max="1600" value="1100" step="50">
                     </div>
                     <div class="slider-group">
+                        <label for="titleArtistGap">标题-歌手间距: <span id="titleArtistGapValue">16</span>px</label>
+                        <input type="range" id="titleArtistGap" min="0" max="80" value="16" step="4">
+                    </div>
+                    <div class="slider-group">
                         <label for="metadataCoverGap">标题-封面间距: <span id="metadataCoverGapValue">60</span>px</label>
                         <input type="range" id="metadataCoverGap" min="20" max="150" value="60" step="10">
                     </div>
@@ -179,6 +183,14 @@
                         <input type="range" id="lyricsLines" min="3" max="9" value="5" step="2">
                     </div>
                     <div class="slider-group">
+                        <label for="lyricsHeight">歌词区域高度: <span id="lyricsHeightValue">50</span>%</label>
+                        <input type="range" id="lyricsHeight" min="30" max="80" value="50" step="5">
+                    </div>
+                    <div class="slider-group">
+                        <label for="lyricsFade">歌词渐隐程度: <span id="lyricsFadeValue">15</span>%</label>
+                        <input type="range" id="lyricsFade" min="0" max="35" value="15" step="5">
+                    </div>
+                    <div class="slider-group">
                         <label for="reviewBoxWidth">评价框宽度: <span id="reviewBoxWidthValue">100</span>%</label>
                         <input type="range" id="reviewBoxWidth" min="60" max="100" value="100" step="5">
                     </div>
@@ -197,6 +209,28 @@
                     <div class="slider-group">
                         <label for="blurStrength">背景模糊: <span id="blurStrengthValue">80</span>px</label>
                         <input type="range" id="blurStrength" min="40" max="150" value="80" step="10">
+                    </div>
+                    
+                    <h3 class="subsection-title">文字灰度(0黑-255白)</h3>
+                    <div class="slider-group">
+                        <label for="titleGray">标题灰度: <span id="titleGrayValue">255</span></label>
+                        <input type="range" id="titleGray" min="0" max="255" value="255" step="5">
+                    </div>
+                    <div class="slider-group">
+                        <label for="artistGray">歌手灰度: <span id="artistGrayValue">180</span></label>
+                        <input type="range" id="artistGray" min="0" max="255" value="180" step="5">
+                    </div>
+                    <div class="slider-group">
+                        <label for="lyricsGray">歌词灰度: <span id="lyricsGrayValue">255</span></label>
+                        <input type="range" id="lyricsGray" min="0" max="255" value="255" step="5">
+                    </div>
+                    <div class="slider-group">
+                        <label for="translationGray">翻译灰度: <span id="translationGrayValue">180</span></label>
+                        <input type="range" id="translationGray" min="0" max="255" value="180" step="5">
+                    </div>
+                    <div class="slider-group">
+                        <label for="reviewGray">评价灰度: <span id="reviewGrayValue">220</span></label>
+                        <input type="range" id="reviewGray" min="0" max="255" value="220" step="5">
                     </div>
                 </section>
 

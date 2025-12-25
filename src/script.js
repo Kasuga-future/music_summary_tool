@@ -68,6 +68,7 @@ function initializeElements() {
     
     // Style sliders
     elements.coverSize = document.getElementById('coverSize');
+    elements.titleArtistGap = document.getElementById('titleArtistGap');
     elements.metadataCoverGap = document.getElementById('metadataCoverGap');
     elements.coverProgressGap = document.getElementById('coverProgressGap');
     elements.titleFontSize = document.getElementById('titleFontSize');
@@ -76,14 +77,24 @@ function initializeElements() {
     elements.translationFontSize = document.getElementById('translationFontSize');
     elements.reviewFontSize = document.getElementById('reviewFontSize');
     elements.lyricsLines = document.getElementById('lyricsLines');
+    elements.lyricsHeight = document.getElementById('lyricsHeight');
+    elements.lyricsFade = document.getElementById('lyricsFade');
     elements.reviewBoxWidth = document.getElementById('reviewBoxWidth');
     elements.reviewBoxHeight = document.getElementById('reviewBoxHeight');
     elements.reviewBgOpacity = document.getElementById('reviewBgOpacity');
     elements.borderRadius = document.getElementById('borderRadius');
     elements.blurStrength = document.getElementById('blurStrength');
     
+    // Gray scale controls
+    elements.titleGray = document.getElementById('titleGray');
+    elements.artistGray = document.getElementById('artistGray');
+    elements.lyricsGray = document.getElementById('lyricsGray');
+    elements.translationGray = document.getElementById('translationGray');
+    elements.reviewGray = document.getElementById('reviewGray');
+    
     // Style value displays
     elements.coverSizeValue = document.getElementById('coverSizeValue');
+    elements.titleArtistGapValue = document.getElementById('titleArtistGapValue');
     elements.metadataCoverGapValue = document.getElementById('metadataCoverGapValue');
     elements.coverProgressGapValue = document.getElementById('coverProgressGapValue');
     elements.titleFontSizeValue = document.getElementById('titleFontSizeValue');
@@ -92,11 +103,18 @@ function initializeElements() {
     elements.translationFontSizeValue = document.getElementById('translationFontSizeValue');
     elements.reviewFontSizeValue = document.getElementById('reviewFontSizeValue');
     elements.lyricsLinesValue = document.getElementById('lyricsLinesValue');
+    elements.lyricsHeightValue = document.getElementById('lyricsHeightValue');
+    elements.lyricsFadeValue = document.getElementById('lyricsFadeValue');
     elements.reviewBoxWidthValue = document.getElementById('reviewBoxWidthValue');
     elements.reviewBoxHeightValue = document.getElementById('reviewBoxHeightValue');
     elements.reviewBgOpacityValue = document.getElementById('reviewBgOpacityValue');
     elements.borderRadiusValue = document.getElementById('borderRadiusValue');
     elements.blurStrengthValue = document.getElementById('blurStrengthValue');
+    elements.titleGrayValue = document.getElementById('titleGrayValue');
+    elements.artistGrayValue = document.getElementById('artistGrayValue');
+    elements.lyricsGrayValue = document.getElementById('lyricsGrayValue');
+    elements.translationGrayValue = document.getElementById('translationGrayValue');
+    elements.reviewGrayValue = document.getElementById('reviewGrayValue');
     
     // Layout/Edit mode elements
     elements.editModeToggle = document.getElementById('editModeToggle');
@@ -313,6 +331,7 @@ function initializeEventListeners() {
     
     // Style sliders
     elements.coverSize.addEventListener('input', updateStyles);
+    elements.titleArtistGap.addEventListener('input', updateStyles);
     elements.metadataCoverGap.addEventListener('input', updateStyles);
     elements.coverProgressGap.addEventListener('input', updateStyles);
     elements.titleFontSize.addEventListener('input', updateStyles);
@@ -321,11 +340,18 @@ function initializeEventListeners() {
     elements.translationFontSize.addEventListener('input', updateStyles);
     elements.reviewFontSize.addEventListener('input', updateStyles);
     elements.lyricsLines.addEventListener('input', () => { updateStyles(); updateLyrics(); });
+    elements.lyricsHeight.addEventListener('input', updateStyles);
+    elements.lyricsFade.addEventListener('input', updateStyles);
     elements.reviewBoxWidth.addEventListener('input', updateStyles);
     elements.reviewBoxHeight.addEventListener('input', updateStyles);
     elements.reviewBgOpacity.addEventListener('input', updateStyles);
     elements.borderRadius.addEventListener('input', updateStyles);
     elements.blurStrength.addEventListener('input', updateStyles);
+    elements.titleGray.addEventListener('input', updateStyles);
+    elements.artistGray.addEventListener('input', updateStyles);
+    elements.lyricsGray.addEventListener('input', updateStyles);
+    elements.translationGray.addEventListener('input', updateStyles);
+    elements.reviewGray.addEventListener('input', updateStyles);
     
     // Layout/Edit mode controls
     elements.editModeToggle.addEventListener('change', toggleEditMode);
@@ -802,6 +828,7 @@ function updateVisibility() {
 function updateStyles() {
     // Update value displays
     elements.coverSizeValue.textContent = elements.coverSize.value;
+    elements.titleArtistGapValue.textContent = elements.titleArtistGap.value;
     elements.metadataCoverGapValue.textContent = elements.metadataCoverGap.value;
     elements.coverProgressGapValue.textContent = elements.coverProgressGap.value;
     elements.titleFontSizeValue.textContent = elements.titleFontSize.value;
@@ -810,11 +837,18 @@ function updateStyles() {
     elements.translationFontSizeValue.textContent = elements.translationFontSize.value;
     elements.reviewFontSizeValue.textContent = elements.reviewFontSize.value;
     elements.lyricsLinesValue.textContent = elements.lyricsLines.value;
+    elements.lyricsHeightValue.textContent = elements.lyricsHeight.value;
+    elements.lyricsFadeValue.textContent = elements.lyricsFade.value;
     elements.reviewBoxWidthValue.textContent = elements.reviewBoxWidth.value;
     elements.reviewBoxHeightValue.textContent = elements.reviewBoxHeight.value;
     elements.reviewBgOpacityValue.textContent = elements.reviewBgOpacity.value;
     elements.borderRadiusValue.textContent = elements.borderRadius.value;
     elements.blurStrengthValue.textContent = elements.blurStrength.value;
+    elements.titleGrayValue.textContent = elements.titleGray.value;
+    elements.artistGrayValue.textContent = elements.artistGray.value;
+    elements.lyricsGrayValue.textContent = elements.lyricsGray.value;
+    elements.translationGrayValue.textContent = elements.translationGray.value;
+    elements.reviewGrayValue.textContent = elements.reviewGray.value;
     
     // Apply cover size (also update progress bar width and metadata panel width)
     const coverSize = elements.coverSize.value + 'px';
@@ -824,8 +858,10 @@ function updateStyles() {
     elements.metadataPanel.style.width = coverSize;
     
     // Apply gaps
+    const titleArtistGap = elements.titleArtistGap.value + 'px';
     const metadataCoverGap = elements.metadataCoverGap.value + 'px';
     const coverProgressGap = elements.coverProgressGap.value + 'px';
+    elements.displayTitle.style.marginBottom = titleArtistGap;
     elements.metadataPanel.style.marginBottom = metadataCoverGap;
     elements.albumArtContainer.style.marginBottom = coverProgressGap;
     
@@ -858,13 +894,23 @@ function updateStyles() {
     const reviewFontSize = elements.reviewFontSize.value + 'px';
     elements.displayReviewContent.style.fontSize = reviewFontSize;
     
+    // Apply lyrics height
+    const lyricsHeight = elements.lyricsHeight.value + '%';
+    elements.lyricsPanel.style.flex = `0 0 ${lyricsHeight}`;
+    
+    // Apply lyrics fade effect
+    const lyricsFade = parseInt(elements.lyricsFade.value);
+    const fadeEnd = 100 - lyricsFade;
+    elements.lyricsPanel.style.maskImage = `linear-gradient(to bottom, transparent 0%, black ${lyricsFade}%, black ${fadeEnd}%, transparent 100%)`;
+    elements.lyricsPanel.style.webkitMaskImage = `linear-gradient(to bottom, transparent 0%, black ${lyricsFade}%, black ${fadeEnd}%, transparent 100%)`;
+    
     // Apply review box size
     const reviewBoxWidth = elements.reviewBoxWidth.value + '%';
     const reviewBoxHeight = elements.reviewBoxHeight.value + 'px';
     elements.reviewPanel.style.width = reviewBoxWidth;
     elements.reviewPanel.style.minHeight = reviewBoxHeight;
     
-    // Apply review background opacity
+    // Apply review background opacity - with theme-aware colors
     const reviewBgOpacity = elements.reviewBgOpacity.value / 100;
     if (currentTheme === 'dark') {
         elements.reviewPanel.style.background = `rgba(0, 0, 0, ${reviewBgOpacity})`;
@@ -880,6 +926,26 @@ function updateStyles() {
     const blurStrength = elements.blurStrength.value + 'px';
     elements.dynamicBg.style.filter = `blur(${blurStrength})`;
     elements.overlayLayer.style.backdropFilter = `blur(${parseInt(blurStrength) * 0.75}px)`;
+    
+    // Apply gray scale to text elements
+    const titleGray = elements.titleGray.value;
+    const artistGray = elements.artistGray.value;
+    const lyricsGray = elements.lyricsGray.value;
+    const translationGray = elements.translationGray.value;
+    const reviewGray = elements.reviewGray.value;
+    
+    elements.displayTitle.style.color = `rgb(${titleGray}, ${titleGray}, ${titleGray})`;
+    elements.displayArtist.style.color = `rgb(${artistGray}, ${artistGray}, ${artistGray})`;
+    
+    document.querySelectorAll('.lyric-text').forEach(el => {
+        el.style.color = `rgb(${lyricsGray}, ${lyricsGray}, ${lyricsGray})`;
+    });
+    
+    document.querySelectorAll('.lyric-translation').forEach(el => {
+        el.style.color = `rgb(${translationGray}, ${translationGray}, ${translationGray})`;
+    });
+    
+    elements.displayReviewContent.style.color = `rgb(${reviewGray}, ${reviewGray}, ${reviewGray})`;
 }
 
 function updateElementPositions() {
@@ -1243,8 +1309,14 @@ async function exportScreenshot() {
         const originalTransform = container.style.transform;
         container.style.transform = 'none';
         
+        // Temporarily remove box-shadow and add it as a filter for better html2canvas support
+        const albumContainer = elements.albumArtContainer;
+        const originalBoxShadow = albumContainer.style.boxShadow || getComputedStyle(albumContainer).boxShadow;
+        albumContainer.style.boxShadow = 'none';
+        albumContainer.style.filter = 'drop-shadow(0 40px 80px rgba(0, 0, 0, 0.25))';
+        
         // Wait for styles to apply
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Capture with html2canvas at exact 3840x2160
         const canvas = await html2canvas(container, {
@@ -1256,11 +1328,18 @@ async function exportScreenshot() {
             backgroundColor: null,
             logging: false,
             windowWidth: 3840,
-            windowHeight: 2160
+            windowHeight: 2160,
+            x: 0,
+            y: 0,
+            scrollX: 0,
+            scrollY: 0,
+            foreignObjectRendering: false
         });
         
-        // Restore transform
+        // Restore original styles
         container.style.transform = originalTransform;
+        albumContainer.style.boxShadow = originalBoxShadow;
+        albumContainer.style.filter = '';
         
         // Create download link
         const link = document.createElement('a');
@@ -1292,6 +1371,7 @@ async function exportScreenshot() {
 function saveSettings() {
     const settings = {
         coverSize: elements.coverSize.value,
+        titleArtistGap: elements.titleArtistGap.value,
         metadataCoverGap: elements.metadataCoverGap.value,
         coverProgressGap: elements.coverProgressGap.value,
         titleFontSize: elements.titleFontSize.value,
@@ -1300,11 +1380,20 @@ function saveSettings() {
         translationFontSize: elements.translationFontSize.value,
         reviewFontSize: elements.reviewFontSize.value,
         lyricsLines: elements.lyricsLines.value,
+        lyricsHeight: elements.lyricsHeight.value,
+        lyricsFade: elements.lyricsFade.value,
         reviewBoxWidth: elements.reviewBoxWidth.value,
         reviewBoxHeight: elements.reviewBoxHeight.value,
         reviewBgOpacity: elements.reviewBgOpacity.value,
         borderRadius: elements.borderRadius.value,
         blurStrength: elements.blurStrength.value,
+        // Gray scale settings
+        titleGray: elements.titleGray.value,
+        artistGray: elements.artistGray.value,
+        lyricsGray: elements.lyricsGray.value,
+        translationGray: elements.translationGray.value,
+        reviewGray: elements.reviewGray.value,
+        // Visibility settings
         showLyrics: elements.showLyrics.checked,
         showTranslation: elements.showTranslation.checked,
         showAlbumArt: elements.showAlbumArt.checked,
@@ -1346,6 +1435,7 @@ function loadSettings() {
         
         // Apply slider values
         if (settings.coverSize) elements.coverSize.value = settings.coverSize;
+        if (settings.titleArtistGap) elements.titleArtistGap.value = settings.titleArtistGap;
         if (settings.metadataCoverGap) elements.metadataCoverGap.value = settings.metadataCoverGap;
         if (settings.coverProgressGap) elements.coverProgressGap.value = settings.coverProgressGap;
         if (settings.titleFontSize) elements.titleFontSize.value = settings.titleFontSize;
@@ -1354,11 +1444,20 @@ function loadSettings() {
         if (settings.translationFontSize) elements.translationFontSize.value = settings.translationFontSize;
         if (settings.reviewFontSize) elements.reviewFontSize.value = settings.reviewFontSize;
         if (settings.lyricsLines) elements.lyricsLines.value = settings.lyricsLines;
+        if (settings.lyricsHeight) elements.lyricsHeight.value = settings.lyricsHeight;
+        if (settings.lyricsFade) elements.lyricsFade.value = settings.lyricsFade;
         if (settings.reviewBoxWidth) elements.reviewBoxWidth.value = settings.reviewBoxWidth;
         if (settings.reviewBoxHeight) elements.reviewBoxHeight.value = settings.reviewBoxHeight;
         if (settings.reviewBgOpacity) elements.reviewBgOpacity.value = settings.reviewBgOpacity;
         if (settings.borderRadius) elements.borderRadius.value = settings.borderRadius;
         if (settings.blurStrength) elements.blurStrength.value = settings.blurStrength;
+        
+        // Gray scale settings
+        if (settings.titleGray) elements.titleGray.value = settings.titleGray;
+        if (settings.artistGray) elements.artistGray.value = settings.artistGray;
+        if (settings.lyricsGray) elements.lyricsGray.value = settings.lyricsGray;
+        if (settings.translationGray) elements.translationGray.value = settings.translationGray;
+        if (settings.reviewGray) elements.reviewGray.value = settings.reviewGray;
         
         // Apply checkbox values
         if (settings.showLyrics !== undefined) elements.showLyrics.checked = settings.showLyrics;
