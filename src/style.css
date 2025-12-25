@@ -123,6 +123,15 @@ htmlbody {
     letter-spacing: 0.5px;
 }
 
+.subsection-title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin: 15px 0 10px 0;
+    color: var(--text-muted);
+    padding-bottom: 5px;
+    border-bottom: 1px dashed var(--border-color);
+}
+
 /* Theme Buttons */
 .theme-buttons {
     display: flex;
@@ -438,18 +447,19 @@ htmlbody {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 40px;
     padding-top: 0;
 }
 
 /* Metadata Panel - Now on left, above cover */
 .metadata-panel {
-    width: 100%;
+    width: var(--album-size, 1100px);
     flex: 0 0 auto;
+    position: relative;
 }
 
 .metadata-panel.align-left {
     text-align: left;
+    align-self: center;
 }
 
 .metadata-panel.align-center {
@@ -492,6 +502,7 @@ htmlbody {
     overflow: hidden;
     box-shadow: 0 40px 80px rgba(0, 0, 0, 0.25);
     flex-shrink: 0;
+    position: relative;
 }
 
 .album-art {
@@ -505,6 +516,7 @@ htmlbody {
 .progress-panel {
     width: 1100px;
     flex: 0 0 auto;
+    position: relative;
 }
 
 .progress-bar-container {
@@ -545,8 +557,9 @@ htmlbody {
     overflow: hidden;
     margin-bottom: 40px;
     padding-top: 40px;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 80%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
+    position: relative;
 }
 
 .lyrics-panel.align-left .lyrics-container {
@@ -596,6 +609,8 @@ htmlbody {
     flex-direction: column;
     justify-content: space-between;
     backdrop-filter: blur(20px);
+    position: relative;
+    min-height: 200px;
 }
 
 [data-theme="light"] .review-panel {
@@ -675,4 +690,58 @@ htmlbody {
     :root {
         --sidebar-width: 320px;
     }
+}
+
+/* ============================================
+   Edit Mode Styles
+   ============================================ */
+.edit-mode .metadata-panel,
+.edit-mode .album-art-container,
+.edit-mode .progress-panel,
+.edit-mode .lyrics-panel,
+.edit-mode .review-panel {
+    outline: 3px dashed rgba(255, 100, 100, 0.7);
+    outline-offset: 8px;
+    cursor: move;
+}
+
+.edit-mode .metadata-panel:hover,
+.edit-mode .album-art-container:hover,
+.edit-mode .progress-panel:hover,
+.edit-mode .lyrics-panel:hover,
+.edit-mode .review-panel:hover {
+    outline-color: rgba(100, 255, 100, 0.9);
+}
+
+.edit-mode .metadata-panel::after,
+.edit-mode .album-art-container::after,
+.edit-mode .progress-panel::after,
+.edit-mode .lyrics-panel::after,
+.edit-mode .review-panel::after {
+    content: attr(data-label);
+    position: absolute;
+    top: -35px;
+    left: 0;
+    background: rgba(255, 100, 100, 0.9);
+    color: white;
+    padding: 4px 12px;
+    font-size: 20px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+.edit-mode .metadata-panel:hover::after,
+.edit-mode .album-art-container:hover::after,
+.edit-mode .progress-panel:hover::after,
+.edit-mode .lyrics-panel:hover::after,
+.edit-mode .review-panel:hover::after {
+    background: rgba(100, 255, 100, 0.9);
+    color: #222;
+}
+
+/* Dragging state */
+.dragging {
+    opacity: 0.8;
+    z-index: 1001;
 }

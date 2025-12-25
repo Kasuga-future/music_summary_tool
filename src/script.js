@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderInkBackground();
     updateLyrics();
     updateReviewDisplay();
+    updateStyles();
+    updateElementPositions();
+    updateAlignment();
     
     window.addEventListener('resize', updatePreviewScale);
 });
@@ -65,23 +68,33 @@ function initializeElements() {
     
     // Style sliders
     elements.coverSize = document.getElementById('coverSize');
+    elements.metadataCoverGap = document.getElementById('metadataCoverGap');
+    elements.coverProgressGap = document.getElementById('coverProgressGap');
     elements.titleFontSize = document.getElementById('titleFontSize');
     elements.artistFontSize = document.getElementById('artistFontSize');
     elements.lyricsFontSize = document.getElementById('lyricsFontSize');
     elements.translationFontSize = document.getElementById('translationFontSize');
     elements.reviewFontSize = document.getElementById('reviewFontSize');
     elements.lyricsLines = document.getElementById('lyricsLines');
+    elements.reviewBoxWidth = document.getElementById('reviewBoxWidth');
+    elements.reviewBoxHeight = document.getElementById('reviewBoxHeight');
+    elements.reviewBgOpacity = document.getElementById('reviewBgOpacity');
     elements.borderRadius = document.getElementById('borderRadius');
     elements.blurStrength = document.getElementById('blurStrength');
     
     // Style value displays
     elements.coverSizeValue = document.getElementById('coverSizeValue');
+    elements.metadataCoverGapValue = document.getElementById('metadataCoverGapValue');
+    elements.coverProgressGapValue = document.getElementById('coverProgressGapValue');
     elements.titleFontSizeValue = document.getElementById('titleFontSizeValue');
     elements.artistFontSizeValue = document.getElementById('artistFontSizeValue');
     elements.lyricsFontSizeValue = document.getElementById('lyricsFontSizeValue');
     elements.translationFontSizeValue = document.getElementById('translationFontSizeValue');
     elements.reviewFontSizeValue = document.getElementById('reviewFontSizeValue');
     elements.lyricsLinesValue = document.getElementById('lyricsLinesValue');
+    elements.reviewBoxWidthValue = document.getElementById('reviewBoxWidthValue');
+    elements.reviewBoxHeightValue = document.getElementById('reviewBoxHeightValue');
+    elements.reviewBgOpacityValue = document.getElementById('reviewBgOpacityValue');
     elements.borderRadiusValue = document.getElementById('borderRadiusValue');
     elements.blurStrengthValue = document.getElementById('blurStrengthValue');
     
@@ -89,14 +102,29 @@ function initializeElements() {
     elements.editModeToggle = document.getElementById('editModeToggle');
     elements.metadataAlign = document.getElementById('metadataAlign');
     elements.lyricsAlign = document.getElementById('lyricsAlign');
-    elements.leftColumnX = document.getElementById('leftColumnX');
-    elements.leftColumnY = document.getElementById('leftColumnY');
-    elements.rightColumnX = document.getElementById('rightColumnX');
-    elements.rightColumnY = document.getElementById('rightColumnY');
-    elements.leftColumnXValue = document.getElementById('leftColumnXValue');
-    elements.leftColumnYValue = document.getElementById('leftColumnYValue');
-    elements.rightColumnXValue = document.getElementById('rightColumnXValue');
-    elements.rightColumnYValue = document.getElementById('rightColumnYValue');
+    
+    // Individual element position controls
+    elements.metadataX = document.getElementById('metadataX');
+    elements.metadataY = document.getElementById('metadataY');
+    elements.coverX = document.getElementById('coverX');
+    elements.coverY = document.getElementById('coverY');
+    elements.progressX = document.getElementById('progressX');
+    elements.progressY = document.getElementById('progressY');
+    elements.lyricsX = document.getElementById('lyricsX');
+    elements.lyricsY = document.getElementById('lyricsY');
+    elements.reviewX = document.getElementById('reviewX');
+    elements.reviewY = document.getElementById('reviewY');
+    
+    elements.metadataXValue = document.getElementById('metadataXValue');
+    elements.metadataYValue = document.getElementById('metadataYValue');
+    elements.coverXValue = document.getElementById('coverXValue');
+    elements.coverYValue = document.getElementById('coverYValue');
+    elements.progressXValue = document.getElementById('progressXValue');
+    elements.progressYValue = document.getElementById('progressYValue');
+    elements.lyricsXValue = document.getElementById('lyricsXValue');
+    elements.lyricsYValue = document.getElementById('lyricsYValue');
+    elements.reviewXValue = document.getElementById('reviewXValue');
+    elements.reviewYValue = document.getElementById('reviewYValue');
     
     // Font selectors
     elements.titleFont = document.getElementById('titleFont');
@@ -138,6 +166,13 @@ function initializeElements() {
     elements.displayReviewDate = document.getElementById('displayReviewDate');
     
     elements.scaleValue = document.getElementById('scaleValue');
+    
+    // Set data labels for edit mode
+    elements.metadataPanel.setAttribute('data-label', '标题/歌手');
+    elements.albumArtContainer.setAttribute('data-label', '专辑封面');
+    elements.progressPanel.setAttribute('data-label', '进度条');
+    elements.lyricsPanel.setAttribute('data-label', '歌词');
+    elements.reviewPanel.setAttribute('data-label', '评价');
 }
 
 // ============================================
@@ -278,12 +313,17 @@ function initializeEventListeners() {
     
     // Style sliders
     elements.coverSize.addEventListener('input', updateStyles);
+    elements.metadataCoverGap.addEventListener('input', updateStyles);
+    elements.coverProgressGap.addEventListener('input', updateStyles);
     elements.titleFontSize.addEventListener('input', updateStyles);
     elements.artistFontSize.addEventListener('input', updateStyles);
     elements.lyricsFontSize.addEventListener('input', updateStyles);
     elements.translationFontSize.addEventListener('input', updateStyles);
     elements.reviewFontSize.addEventListener('input', updateStyles);
     elements.lyricsLines.addEventListener('input', () => { updateStyles(); updateLyrics(); });
+    elements.reviewBoxWidth.addEventListener('input', updateStyles);
+    elements.reviewBoxHeight.addEventListener('input', updateStyles);
+    elements.reviewBgOpacity.addEventListener('input', updateStyles);
     elements.borderRadius.addEventListener('input', updateStyles);
     elements.blurStrength.addEventListener('input', updateStyles);
     
@@ -291,10 +331,18 @@ function initializeEventListeners() {
     elements.editModeToggle.addEventListener('change', toggleEditMode);
     elements.metadataAlign.addEventListener('change', updateAlignment);
     elements.lyricsAlign.addEventListener('change', updateAlignment);
-    elements.leftColumnX.addEventListener('input', updateLayout);
-    elements.leftColumnY.addEventListener('input', updateLayout);
-    elements.rightColumnX.addEventListener('input', updateLayout);
-    elements.rightColumnY.addEventListener('input', updateLayout);
+    
+    // Individual element position controls
+    elements.metadataX.addEventListener('input', updateElementPositions);
+    elements.metadataY.addEventListener('input', updateElementPositions);
+    elements.coverX.addEventListener('input', updateElementPositions);
+    elements.coverY.addEventListener('input', updateElementPositions);
+    elements.progressX.addEventListener('input', updateElementPositions);
+    elements.progressY.addEventListener('input', updateElementPositions);
+    elements.lyricsX.addEventListener('input', updateElementPositions);
+    elements.lyricsY.addEventListener('input', updateElementPositions);
+    elements.reviewX.addEventListener('input', updateElementPositions);
+    elements.reviewY.addEventListener('input', updateElementPositions);
     
     // Font selectors
     elements.titleFont.addEventListener('change', updateFonts);
@@ -342,6 +390,9 @@ function setTheme(theme) {
             elements.dynamicBg.style.backgroundImage = `url(${currentCoverUrl})`;
         }
     }
+    
+    // Update review panel background opacity for theme
+    updateStyles();
 }
 
 // ============================================
@@ -641,8 +692,8 @@ function renderLyricsHTML(lyrics, currentTime, showTranslation) {
         </div>`;
     }
     
-    // Get max lines from slider
-    const maxLines = parseInt(elements.lyricsLines.value) || 4;
+    // Get max lines from slider (now always odd: 3, 5, 7, 9)
+    const maxLines = parseInt(elements.lyricsLines.value) || 5;
     
     // Find current lyric index
     let currentIndex = 0;
@@ -652,10 +703,22 @@ function renderLyricsHTML(lyrics, currentTime, showTranslation) {
         }
     }
     
-    // Show lyrics around current position based on maxLines setting
-    const linesBeforeCurrent = Math.floor(maxLines / 4); // Show about 1/4 of lines before current
-    const startIndex = Math.max(0, currentIndex - linesBeforeCurrent);
-    const endIndex = Math.min(lyrics.length, startIndex + maxLines);
+    // For odd number display, center current lyric with equal lines above and below
+    const linesBeforeCurrent = Math.floor(maxLines / 2);
+    const linesAfterCurrent = Math.floor(maxLines / 2);
+    
+    let startIndex = currentIndex - linesBeforeCurrent;
+    let endIndex = currentIndex + linesAfterCurrent + 1;
+    
+    // Adjust if we're at the beginning or end
+    if (startIndex < 0) {
+        startIndex = 0;
+        endIndex = Math.min(lyrics.length, maxLines);
+    }
+    if (endIndex > lyrics.length) {
+        endIndex = lyrics.length;
+        startIndex = Math.max(0, endIndex - maxLines);
+    }
     
     let html = '';
     for (let i = startIndex; i < endIndex; i++) {
@@ -739,20 +802,32 @@ function updateVisibility() {
 function updateStyles() {
     // Update value displays
     elements.coverSizeValue.textContent = elements.coverSize.value;
+    elements.metadataCoverGapValue.textContent = elements.metadataCoverGap.value;
+    elements.coverProgressGapValue.textContent = elements.coverProgressGap.value;
     elements.titleFontSizeValue.textContent = elements.titleFontSize.value;
     elements.artistFontSizeValue.textContent = elements.artistFontSize.value;
     elements.lyricsFontSizeValue.textContent = elements.lyricsFontSize.value;
     elements.translationFontSizeValue.textContent = elements.translationFontSize.value;
     elements.reviewFontSizeValue.textContent = elements.reviewFontSize.value;
     elements.lyricsLinesValue.textContent = elements.lyricsLines.value;
+    elements.reviewBoxWidthValue.textContent = elements.reviewBoxWidth.value;
+    elements.reviewBoxHeightValue.textContent = elements.reviewBoxHeight.value;
+    elements.reviewBgOpacityValue.textContent = elements.reviewBgOpacity.value;
     elements.borderRadiusValue.textContent = elements.borderRadius.value;
     elements.blurStrengthValue.textContent = elements.blurStrength.value;
     
-    // Apply cover size (also update progress bar width)
+    // Apply cover size (also update progress bar width and metadata panel width)
     const coverSize = elements.coverSize.value + 'px';
     elements.albumArtContainer.style.width = coverSize;
     elements.albumArtContainer.style.height = coverSize;
     elements.progressPanel.style.width = coverSize;
+    elements.metadataPanel.style.width = coverSize;
+    
+    // Apply gaps
+    const metadataCoverGap = elements.metadataCoverGap.value + 'px';
+    const coverProgressGap = elements.coverProgressGap.value + 'px';
+    elements.metadataPanel.style.marginBottom = metadataCoverGap;
+    elements.albumArtContainer.style.marginBottom = coverProgressGap;
     
     // Apply title font size
     const titleFontSize = elements.titleFontSize.value + 'px';
@@ -783,6 +858,20 @@ function updateStyles() {
     const reviewFontSize = elements.reviewFontSize.value + 'px';
     elements.displayReviewContent.style.fontSize = reviewFontSize;
     
+    // Apply review box size
+    const reviewBoxWidth = elements.reviewBoxWidth.value + '%';
+    const reviewBoxHeight = elements.reviewBoxHeight.value + 'px';
+    elements.reviewPanel.style.width = reviewBoxWidth;
+    elements.reviewPanel.style.minHeight = reviewBoxHeight;
+    
+    // Apply review background opacity
+    const reviewBgOpacity = elements.reviewBgOpacity.value / 100;
+    if (currentTheme === 'dark') {
+        elements.reviewPanel.style.background = `rgba(0, 0, 0, ${reviewBgOpacity})`;
+    } else {
+        elements.reviewPanel.style.background = `rgba(255, 255, 255, ${0.3 + reviewBgOpacity * 0.7})`;
+    }
+    
     // Apply border radius
     const borderRadius = elements.borderRadius.value + 'px';
     elements.albumArtContainer.style.borderRadius = borderRadius;
@@ -793,21 +882,44 @@ function updateStyles() {
     elements.overlayLayer.style.backdropFilter = `blur(${parseInt(blurStrength) * 0.75}px)`;
 }
 
-function updateLayout() {
+function updateElementPositions() {
     // Update value displays
-    elements.leftColumnXValue.textContent = elements.leftColumnX.value;
-    elements.leftColumnYValue.textContent = elements.leftColumnY.value;
-    elements.rightColumnXValue.textContent = elements.rightColumnX.value;
-    elements.rightColumnYValue.textContent = elements.rightColumnY.value;
+    elements.metadataXValue.textContent = elements.metadataX.value;
+    elements.metadataYValue.textContent = elements.metadataY.value;
+    elements.coverXValue.textContent = elements.coverX.value;
+    elements.coverYValue.textContent = elements.coverY.value;
+    elements.progressXValue.textContent = elements.progressX.value;
+    elements.progressYValue.textContent = elements.progressY.value;
+    elements.lyricsXValue.textContent = elements.lyricsX.value;
+    elements.lyricsYValue.textContent = elements.lyricsY.value;
+    elements.reviewXValue.textContent = elements.reviewX.value;
+    elements.reviewYValue.textContent = elements.reviewY.value;
     
-    // Apply position offsets
-    const leftX = parseInt(elements.leftColumnX.value);
-    const leftY = parseInt(elements.leftColumnY.value);
-    const rightX = parseInt(elements.rightColumnX.value);
-    const rightY = parseInt(elements.rightColumnY.value);
+    // Apply position transforms to individual elements
+    const metadataX = parseInt(elements.metadataX.value);
+    const metadataY = parseInt(elements.metadataY.value);
+    elements.metadataPanel.style.transform = `translate(${metadataX}px, ${metadataY}px)`;
     
-    elements.leftColumn.style.transform = `translate(${leftX}px, ${leftY}px)`;
-    elements.rightColumn.style.transform = `translate(${rightX}px, ${rightY}px)`;
+    const coverX = parseInt(elements.coverX.value);
+    const coverY = parseInt(elements.coverY.value);
+    elements.albumArtContainer.style.transform = `translate(${coverX}px, ${coverY}px)`;
+    
+    const progressX = parseInt(elements.progressX.value);
+    const progressY = parseInt(elements.progressY.value);
+    elements.progressPanel.style.transform = `translate(${progressX}px, ${progressY}px)`;
+    
+    const lyricsX = parseInt(elements.lyricsX.value);
+    const lyricsY = parseInt(elements.lyricsY.value);
+    elements.lyricsPanel.style.transform = `translate(${lyricsX}px, ${lyricsY}px)`;
+    
+    const reviewX = parseInt(elements.reviewX.value);
+    const reviewY = parseInt(elements.reviewY.value);
+    elements.reviewPanel.style.transform = `translate(${reviewX}px, ${reviewY}px)`;
+}
+
+function updateLayout() {
+    // Legacy function - now using updateElementPositions instead
+    updateElementPositions();
 }
 
 function updateAlignment() {
@@ -829,12 +941,105 @@ function toggleEditMode() {
     elements.previewContainer.classList.toggle('edit-mode', editMode);
     
     if (editMode) {
-        // Add visual indicators for edit mode
-        elements.leftColumn.style.outline = '2px dashed rgba(255, 100, 100, 0.5)';
-        elements.rightColumn.style.outline = '2px dashed rgba(100, 100, 255, 0.5)';
+        // Setup drag functionality for each element
+        setupDragForElement(elements.metadataPanel, 'metadata');
+        setupDragForElement(elements.albumArtContainer, 'cover');
+        setupDragForElement(elements.progressPanel, 'progress');
+        setupDragForElement(elements.lyricsPanel, 'lyrics');
+        setupDragForElement(elements.reviewPanel, 'review');
     } else {
-        elements.leftColumn.style.outline = '';
-        elements.rightColumn.style.outline = '';
+        // Remove drag handlers
+        removeDragFromElement(elements.metadataPanel);
+        removeDragFromElement(elements.albumArtContainer);
+        removeDragFromElement(elements.progressPanel);
+        removeDragFromElement(elements.lyricsPanel);
+        removeDragFromElement(elements.reviewPanel);
+    }
+}
+
+function setupDragForElement(element, elementName) {
+    let isDragging = false;
+    let startX, startY;
+    let startOffsetX, startOffsetY;
+    
+    const onMouseDown = (e) => {
+        if (!elements.editModeToggle.checked) return;
+        
+        isDragging = true;
+        element.classList.add('dragging');
+        
+        // Get the current scale of the preview container
+        const container = elements.previewContainer;
+        const transform = window.getComputedStyle(container).transform;
+        let scale = 1;
+        if (transform && transform !== 'none') {
+            const matrix = new DOMMatrix(transform);
+            scale = matrix.a;
+        }
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        // Get current offset values from sliders
+        startOffsetX = parseInt(elements[elementName + 'X'].value) || 0;
+        startOffsetY = parseInt(elements[elementName + 'Y'].value) || 0;
+        
+        e.preventDefault();
+    };
+    
+    const onMouseMove = (e) => {
+        if (!isDragging) return;
+        
+        // Get the current scale
+        const container = elements.previewContainer;
+        const transform = window.getComputedStyle(container).transform;
+        let scale = 1;
+        if (transform && transform !== 'none') {
+            const matrix = new DOMMatrix(transform);
+            scale = matrix.a;
+        }
+        
+        // Calculate movement adjusted for scale
+        const dx = (e.clientX - startX) / scale;
+        const dy = (e.clientY - startY) / scale;
+        
+        // Calculate new offset
+        const newX = Math.round(startOffsetX + dx);
+        const newY = Math.round(startOffsetY + dy);
+        
+        // Clamp values to slider range
+        const clampedX = Math.max(-500, Math.min(500, newX));
+        const clampedY = Math.max(-500, Math.min(500, newY));
+        
+        // Update slider values
+        elements[elementName + 'X'].value = clampedX;
+        elements[elementName + 'Y'].value = clampedY;
+        
+        // Update positions
+        updateElementPositions();
+    };
+    
+    const onMouseUp = () => {
+        if (isDragging) {
+            isDragging = false;
+            element.classList.remove('dragging');
+        }
+    };
+    
+    element.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    
+    // Store handlers for removal
+    element._dragHandlers = { onMouseDown, onMouseMove, onMouseUp };
+}
+
+function removeDragFromElement(element) {
+    if (element._dragHandlers) {
+        element.removeEventListener('mousedown', element._dragHandlers.onMouseDown);
+        document.removeEventListener('mousemove', element._dragHandlers.onMouseMove);
+        document.removeEventListener('mouseup', element._dragHandlers.onMouseUp);
+        delete element._dragHandlers;
     }
 }
 
@@ -1087,12 +1292,17 @@ async function exportScreenshot() {
 function saveSettings() {
     const settings = {
         coverSize: elements.coverSize.value,
+        metadataCoverGap: elements.metadataCoverGap.value,
+        coverProgressGap: elements.coverProgressGap.value,
         titleFontSize: elements.titleFontSize.value,
         artistFontSize: elements.artistFontSize.value,
         lyricsFontSize: elements.lyricsFontSize.value,
         translationFontSize: elements.translationFontSize.value,
         reviewFontSize: elements.reviewFontSize.value,
         lyricsLines: elements.lyricsLines.value,
+        reviewBoxWidth: elements.reviewBoxWidth.value,
+        reviewBoxHeight: elements.reviewBoxHeight.value,
+        reviewBgOpacity: elements.reviewBgOpacity.value,
         borderRadius: elements.borderRadius.value,
         blurStrength: elements.blurStrength.value,
         showLyrics: elements.showLyrics.checked,
@@ -1111,10 +1321,17 @@ function saveSettings() {
         // Layout settings
         metadataAlign: elements.metadataAlign.value,
         lyricsAlign: elements.lyricsAlign.value,
-        leftColumnX: elements.leftColumnX.value,
-        leftColumnY: elements.leftColumnY.value,
-        rightColumnX: elements.rightColumnX.value,
-        rightColumnY: elements.rightColumnY.value
+        // Individual element positions
+        metadataX: elements.metadataX.value,
+        metadataY: elements.metadataY.value,
+        coverX: elements.coverX.value,
+        coverY: elements.coverY.value,
+        progressX: elements.progressX.value,
+        progressY: elements.progressY.value,
+        lyricsX: elements.lyricsX.value,
+        lyricsY: elements.lyricsY.value,
+        reviewX: elements.reviewX.value,
+        reviewY: elements.reviewY.value
     };
     
     localStorage.setItem('musicSummarySettings', JSON.stringify(settings));
@@ -1129,12 +1346,17 @@ function loadSettings() {
         
         // Apply slider values
         if (settings.coverSize) elements.coverSize.value = settings.coverSize;
+        if (settings.metadataCoverGap) elements.metadataCoverGap.value = settings.metadataCoverGap;
+        if (settings.coverProgressGap) elements.coverProgressGap.value = settings.coverProgressGap;
         if (settings.titleFontSize) elements.titleFontSize.value = settings.titleFontSize;
         if (settings.artistFontSize) elements.artistFontSize.value = settings.artistFontSize;
         if (settings.lyricsFontSize) elements.lyricsFontSize.value = settings.lyricsFontSize;
         if (settings.translationFontSize) elements.translationFontSize.value = settings.translationFontSize;
         if (settings.reviewFontSize) elements.reviewFontSize.value = settings.reviewFontSize;
         if (settings.lyricsLines) elements.lyricsLines.value = settings.lyricsLines;
+        if (settings.reviewBoxWidth) elements.reviewBoxWidth.value = settings.reviewBoxWidth;
+        if (settings.reviewBoxHeight) elements.reviewBoxHeight.value = settings.reviewBoxHeight;
+        if (settings.reviewBgOpacity) elements.reviewBgOpacity.value = settings.reviewBgOpacity;
         if (settings.borderRadius) elements.borderRadius.value = settings.borderRadius;
         if (settings.blurStrength) elements.blurStrength.value = settings.blurStrength;
         
@@ -1166,10 +1388,18 @@ function loadSettings() {
         // Apply layout settings
         if (settings.metadataAlign) elements.metadataAlign.value = settings.metadataAlign;
         if (settings.lyricsAlign) elements.lyricsAlign.value = settings.lyricsAlign;
-        if (settings.leftColumnX) elements.leftColumnX.value = settings.leftColumnX;
-        if (settings.leftColumnY) elements.leftColumnY.value = settings.leftColumnY;
-        if (settings.rightColumnX) elements.rightColumnX.value = settings.rightColumnX;
-        if (settings.rightColumnY) elements.rightColumnY.value = settings.rightColumnY;
+        
+        // Apply individual element positions
+        if (settings.metadataX) elements.metadataX.value = settings.metadataX;
+        if (settings.metadataY) elements.metadataY.value = settings.metadataY;
+        if (settings.coverX) elements.coverX.value = settings.coverX;
+        if (settings.coverY) elements.coverY.value = settings.coverY;
+        if (settings.progressX) elements.progressX.value = settings.progressX;
+        if (settings.progressY) elements.progressY.value = settings.progressY;
+        if (settings.lyricsX) elements.lyricsX.value = settings.lyricsX;
+        if (settings.lyricsY) elements.lyricsY.value = settings.lyricsY;
+        if (settings.reviewX) elements.reviewX.value = settings.reviewX;
+        if (settings.reviewY) elements.reviewY.value = settings.reviewY;
         
         // Apply theme
         if (settings.theme) currentTheme = settings.theme;
@@ -1178,7 +1408,7 @@ function loadSettings() {
         updateStyles();
         updateFonts();
         updateVisibility();
-        updateLayout();
+        updateElementPositions();
         updateAlignment();
         
     } catch (e) {

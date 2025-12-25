@@ -147,6 +147,14 @@
                         <input type="range" id="coverSize" min="600" max="1600" value="1100" step="50">
                     </div>
                     <div class="slider-group">
+                        <label for="metadataCoverGap">标题-封面间距: <span id="metadataCoverGapValue">60</span>px</label>
+                        <input type="range" id="metadataCoverGap" min="20" max="150" value="60" step="10">
+                    </div>
+                    <div class="slider-group">
+                        <label for="coverProgressGap">封面-进度条间距: <span id="coverProgressGapValue">60</span>px</label>
+                        <input type="range" id="coverProgressGap" min="20" max="150" value="60" step="10">
+                    </div>
+                    <div class="slider-group">
                         <label for="titleFontSize">标题字号: <span id="titleFontSizeValue">72</span>px</label>
                         <input type="range" id="titleFontSize" min="36" max="160" value="72" step="4">
                     </div>
@@ -167,8 +175,20 @@
                         <input type="range" id="reviewFontSize" min="20" max="80" value="36" step="2">
                     </div>
                     <div class="slider-group">
-                        <label for="lyricsLines">歌词显示行数: <span id="lyricsLinesValue">4</span></label>
-                        <input type="range" id="lyricsLines" min="2" max="8" value="4" step="1">
+                        <label for="lyricsLines">歌词显示行数: <span id="lyricsLinesValue">5</span></label>
+                        <input type="range" id="lyricsLines" min="3" max="9" value="5" step="2">
+                    </div>
+                    <div class="slider-group">
+                        <label for="reviewBoxWidth">评价框宽度: <span id="reviewBoxWidthValue">100</span>%</label>
+                        <input type="range" id="reviewBoxWidth" min="60" max="100" value="100" step="5">
+                    </div>
+                    <div class="slider-group">
+                        <label for="reviewBoxHeight">评价框高度: <span id="reviewBoxHeightValue">300</span>px</label>
+                        <input type="range" id="reviewBoxHeight" min="150" max="600" value="300" step="25">
+                    </div>
+                    <div class="slider-group">
+                        <label for="reviewBgOpacity">评价背景透明度: <span id="reviewBgOpacityValue">35</span>%</label>
+                        <input type="range" id="reviewBgOpacity" min="0" max="80" value="35" step="5">
                     </div>
                     <div class="slider-group">
                         <label for="borderRadius">圆角大小: <span id="borderRadiusValue">24</span>px</label>
@@ -186,14 +206,14 @@
                     <div class="checkbox-group" style="margin-bottom: 12px;">
                         <label>
                             <input type="checkbox" id="editModeToggle">
-                            启用编辑模式 (可拖拽调整位置)
+                            启用编辑模式 (显示控件边框)
                         </label>
                     </div>
                     <div class="input-group">
                         <label>标题/歌手对齐</label>
                         <select id="metadataAlign" class="font-select">
                             <option value="center">居中</option>
-                            <option value="left">靠左</option>
+                            <option value="left">靠左(与封面对齐)</option>
                         </select>
                     </div>
                     <div class="input-group">
@@ -203,21 +223,55 @@
                             <option value="center">居中</option>
                         </select>
                     </div>
+
+                    <h3 class="subsection-title">标题/歌手位置</h3>
                     <div class="slider-group">
-                        <label for="leftColumnX">左列X偏移: <span id="leftColumnXValue">0</span>px</label>
-                        <input type="range" id="leftColumnX" min="-200" max="200" value="0" step="10">
+                        <label for="metadataX">X: <span id="metadataXValue">0</span>px</label>
+                        <input type="range" id="metadataX" min="-500" max="500" value="0" step="10">
                     </div>
                     <div class="slider-group">
-                        <label for="leftColumnY">左列Y偏移: <span id="leftColumnYValue">0</span>px</label>
-                        <input type="range" id="leftColumnY" min="-300" max="300" value="0" step="10">
+                        <label for="metadataY">Y: <span id="metadataYValue">0</span>px</label>
+                        <input type="range" id="metadataY" min="-500" max="500" value="0" step="10">
+                    </div>
+
+                    <h3 class="subsection-title">封面位置</h3>
+                    <div class="slider-group">
+                        <label for="coverX">X: <span id="coverXValue">0</span>px</label>
+                        <input type="range" id="coverX" min="-500" max="500" value="0" step="10">
                     </div>
                     <div class="slider-group">
-                        <label for="rightColumnX">右列X偏移: <span id="rightColumnXValue">0</span>px</label>
-                        <input type="range" id="rightColumnX" min="-200" max="200" value="0" step="10">
+                        <label for="coverY">Y: <span id="coverYValue">0</span>px</label>
+                        <input type="range" id="coverY" min="-500" max="500" value="0" step="10">
+                    </div>
+
+                    <h3 class="subsection-title">进度条位置</h3>
+                    <div class="slider-group">
+                        <label for="progressX">X: <span id="progressXValue">0</span>px</label>
+                        <input type="range" id="progressX" min="-500" max="500" value="0" step="10">
                     </div>
                     <div class="slider-group">
-                        <label for="rightColumnY">右列Y偏移: <span id="rightColumnYValue">0</span>px</label>
-                        <input type="range" id="rightColumnY" min="-300" max="300" value="0" step="10">
+                        <label for="progressY">Y: <span id="progressYValue">0</span>px</label>
+                        <input type="range" id="progressY" min="-500" max="500" value="0" step="10">
+                    </div>
+
+                    <h3 class="subsection-title">歌词位置</h3>
+                    <div class="slider-group">
+                        <label for="lyricsX">X: <span id="lyricsXValue">0</span>px</label>
+                        <input type="range" id="lyricsX" min="-500" max="500" value="0" step="10">
+                    </div>
+                    <div class="slider-group">
+                        <label for="lyricsY">Y: <span id="lyricsYValue">0</span>px</label>
+                        <input type="range" id="lyricsY" min="-500" max="500" value="0" step="10">
+                    </div>
+
+                    <h3 class="subsection-title">评价位置</h3>
+                    <div class="slider-group">
+                        <label for="reviewX">X: <span id="reviewXValue">0</span>px</label>
+                        <input type="range" id="reviewX" min="-500" max="500" value="0" step="10">
+                    </div>
+                    <div class="slider-group">
+                        <label for="reviewY">Y: <span id="reviewYValue">0</span>px</label>
+                        <input type="range" id="reviewY" min="-500" max="500" value="0" step="10">
                     </div>
                 </section>
 
