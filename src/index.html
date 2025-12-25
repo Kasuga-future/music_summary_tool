@@ -147,8 +147,20 @@
                         <input type="range" id="coverSize" min="800" max="1400" value="1100" step="50">
                     </div>
                     <div class="slider-group">
-                        <label for="lyricsFontSize">歌词字号: <span id="lyricsFontSizeValue">48</span>px</label>
+                        <label for="titleFontSize">标题字号: <span id="titleFontSizeValue">72</span>px</label>
+                        <input type="range" id="titleFontSize" min="48" max="120" value="72" step="4">
+                    </div>
+                    <div class="slider-group">
+                        <label for="artistFontSize">歌手字号: <span id="artistFontSizeValue">42</span>px</label>
+                        <input type="range" id="artistFontSize" min="28" max="72" value="42" step="2">
+                    </div>
+                    <div class="slider-group">
+                        <label for="lyricsFontSize">原文字号: <span id="lyricsFontSizeValue">48</span>px</label>
                         <input type="range" id="lyricsFontSize" min="32" max="72" value="48" step="2">
+                    </div>
+                    <div class="slider-group">
+                        <label for="translationFontSize">翻译字号: <span id="translationFontSizeValue">32</span>px</label>
+                        <input type="range" id="translationFontSize" min="20" max="56" value="32" step="2">
                     </div>
                     <div class="slider-group">
                         <label for="reviewFontSize">评价字号: <span id="reviewFontSizeValue">36</span>px</label>
@@ -169,6 +181,31 @@
                     <div class="slider-group">
                         <label for="reviewRatio">评价区域占比: <span id="reviewRatioValue">35</span>%</label>
                         <input type="range" id="reviewRatio" min="15" max="60" value="35" step="5">
+                    </div>
+                </section>
+
+                <!-- Font Settings -->
+                <section class="config-section">
+                    <h2 class="section-title">字体设置</h2>
+                    <div class="input-group">
+                        <label for="titleFont">标题字体</label>
+                        <select id="titleFont" class="font-select"></select>
+                    </div>
+                    <div class="input-group">
+                        <label for="artistFont">歌手字体</label>
+                        <select id="artistFont" class="font-select"></select>
+                    </div>
+                    <div class="input-group">
+                        <label for="lyricsFont">歌词字体</label>
+                        <select id="lyricsFont" class="font-select"></select>
+                    </div>
+                    <div class="input-group">
+                        <label for="translationFont">翻译字体</label>
+                        <select id="translationFont" class="font-select"></select>
+                    </div>
+                    <div class="input-group">
+                        <label for="reviewFont">评价字体</label>
+                        <select id="reviewFont" class="font-select"></select>
                     </div>
                 </section>
 
@@ -195,21 +232,34 @@
 
                     <!-- Main Content -->
                     <div class="preview-content" id="previewContent">
-                        <!-- Left Column - Album Art -->
+                        <!-- Left Column - Title, Album Art, Progress -->
                         <div class="left-column" id="leftColumn">
-                            <div class="album-art-container" id="albumArtContainer">
-                                <img src="" alt="Album Cover" id="albumArt" class="album-art">
-                            </div>
-                        </div>
-
-                        <!-- Right Column - Info, Lyrics, Review -->
-                        <div class="right-column" id="rightColumn">
-                            <!-- Metadata Panel -->
+                            <!-- Metadata Panel - Now on left, above cover -->
                             <div class="metadata-panel" id="metadataPanel">
                                 <h2 class="track-title" id="displayTitle">歌曲名称</h2>
                                 <p class="artist-name" id="displayArtist">艺术家</p>
                             </div>
 
+                            <div class="album-art-container" id="albumArtContainer">
+                                <img src="" alt="Album Cover" id="albumArt" class="album-art">
+                            </div>
+
+                            <!-- Progress Panel - Now on left, below cover -->
+                            <div class="progress-panel" id="progressPanel">
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" id="progressBarFill"></div>
+                                    </div>
+                                    <div class="progress-time">
+                                        <span id="displayCurrentTime">0:00</span>
+                                        <span id="displayTotalTime">3:45</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column - Lyrics, Review -->
+                        <div class="right-column" id="rightColumn">
                             <!-- Lyrics Panel -->
                             <div class="lyrics-panel" id="lyricsPanel">
                                 <div class="lyrics-container" id="lyricsContainer">
@@ -223,19 +273,6 @@
                                 <div class="review-meta">
                                     <span class="review-author" id="displayReviewAuthor">署名</span>
                                     <span class="review-date" id="displayReviewDate">2024.12.25</span>
-                                </div>
-                            </div>
-
-                            <!-- Progress Panel -->
-                            <div class="progress-panel" id="progressPanel">
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-bg">
-                                        <div class="progress-bar-fill" id="progressBarFill"></div>
-                                    </div>
-                                    <div class="progress-time">
-                                        <span id="displayCurrentTime">0:00</span>
-                                        <span id="displayTotalTime">3:45</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>

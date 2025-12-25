@@ -197,7 +197,8 @@ htmlbody {
 }
 
 .input-group input[type="text"],
-.input-group textarea {
+.input-group textarea,
+.input-group select {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--border-color);
@@ -209,8 +210,22 @@ htmlbody {
     resize: vertical;
 }
 
+.input-group select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.font-select {
+    max-height: 200px;
+}
+
 .input-group input[type="text"]:focus,
-.input-group textarea:focus {
+.input-group textarea:focus,
+.input-group select:focus {
     outline: none;
     border-color: #666;
 }
@@ -415,13 +430,36 @@ htmlbody {
     gap: 120px;
 }
 
-/* Left Column - 45% width, centered */
+/* Left Column - 45% width, vertical layout */
 .left-column {
     width: 45%;
     flex-shrink: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 50px;
+}
+
+/* Metadata Panel - Now on left, above cover */
+.metadata-panel {
+    width: 100%;
+    text-align: center;
+    flex: 0 0 auto;
+}
+
+.track-title {
+    font-size: 72px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    line-height: 1.2;
+}
+
+.artist-name {
+    font-size: 48px;
+    color: var(--text-muted);
+    font-weight: 400;
 }
 
 /* Right Column - 55% width, space-between */
@@ -450,107 +488,10 @@ htmlbody {
     display: block;
 }
 
-/* Metadata Panel - 15% height */
-.metadata-panel {
-    flex: 0 0 auto;
-    margin-bottom: 40px;
-}
-
-.track-title {
-    font-size: 72px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 16px;
-    line-height: 1.2;
-}
-
-.artist-name {
-    font-size: 42px;
-    color: var(--text-secondary);
-    font-weight: 400;
-}
-
-/* Lyrics Panel - 40% height with mask */
-.lyrics-panel {
-    flex: 0 0 40%;
-    overflow: hidden;
-    margin-bottom: 60px;
-    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-}
-
-.lyrics-container {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-}
-
-.lyric-line {
-    transition: all 0.3s ease;
-}
-
-.lyric-text {
-    font-size: 48px;
-    font-weight: 500;
-    color: var(--text-primary);
-    line-height: 1.5;
-}
-
-.lyric-text.current {
-    font-size: 52px;
-    font-weight: 600;
-}
-
-.lyric-translation {
-    font-size: 32px;
-    color: var(--text-muted);
-    margin-top: 10px;
-    font-style: normal;
-}
-
-/* Review Panel - 35% height with background */
-.review-panel {
-    flex: 0 0 35%;
-    background: var(--bg-card);
-    border-radius: 16px;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    backdrop-filter: blur(20px);
-}
-
-.review-text {
-    font-size: 36px;
-    color: var(--text-secondary);
-    line-height: 1.8;
-    font-family: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', serif;
-    flex: 1;
-}
-
-.review-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
-}
-
-.review-author {
-    font-size: 24px;
-    color: var(--text-muted);
-}
-
-.review-date {
-    font-size: 24px;
-    color: var(--text-muted);
-}
-
-/* Progress Panel */
+/* Progress Panel - Now on left, below cover */
 .progress-panel {
+    width: 100%;
     flex: 0 0 auto;
-    margin-top: 40px;
 }
 
 .progress-bar-container {
@@ -582,6 +523,87 @@ htmlbody {
     justify-content: space-between;
     margin-top: 16px;
     font-size: 28px;
+    color: var(--text-muted);
+}
+
+/* Lyrics Panel - with mask */
+.lyrics-panel {
+    flex: 0 0 50%;
+    overflow: hidden;
+    margin-bottom: 60px;
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.lyrics-container {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.lyric-line {
+    transition: all 0.3s ease;
+}
+
+.lyric-text {
+    font-size: 48px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.lyric-text.current {
+    font-size: 52px;
+    font-weight: 600;
+}
+
+.lyric-translation {
+    font-size: 36px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    font-style: normal;
+}
+
+/* Review Panel - Enhanced contrast background */
+.review-panel {
+    flex: 0 0 35%;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 16px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    backdrop-filter: blur(20px);
+}
+
+[data-theme="light"] .review-panel {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.review-text {
+    font-size: 36px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    font-family: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', serif;
+    flex: 1;
+}
+
+.review-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.review-author {
+    font-size: 24px;
+    color: var(--text-muted);
+}
+
+.review-date {
+    font-size: 24px;
     color: var(--text-muted);
 }
 

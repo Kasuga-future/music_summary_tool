@@ -11,15 +11,20 @@ let currentTheme = 'dark';
 let currentCoverUrl = null;
 let totalDuration = 225; // 默认 3:45
 let currentPalette = [];
+let albumPalette = []; // 保存从专辑封面提取的颜色
 
 // DOM Element References
 const elements = {};
+
+// Available system fonts
+let availableFonts = [];
 
 // ============================================
 // Initialization
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
     initializeElements();
+    loadSystemFonts();
     initializeEventListeners();
     loadSettings();
     setTheme('dark');
@@ -58,21 +63,36 @@ function initializeElements() {
     elements.reviewAuthor = document.getElementById('reviewAuthor');
     elements.reviewDate = document.getElementById('reviewDate');
     
+    // Style sliders
     elements.coverSize = document.getElementById('coverSize');
+    elements.titleFontSize = document.getElementById('titleFontSize');
+    elements.artistFontSize = document.getElementById('artistFontSize');
     elements.lyricsFontSize = document.getElementById('lyricsFontSize');
+    elements.translationFontSize = document.getElementById('translationFontSize');
     elements.reviewFontSize = document.getElementById('reviewFontSize');
     elements.borderRadius = document.getElementById('borderRadius');
     elements.blurStrength = document.getElementById('blurStrength');
     elements.lyricsRatio = document.getElementById('lyricsRatio');
     elements.reviewRatio = document.getElementById('reviewRatio');
     
+    // Style value displays
     elements.coverSizeValue = document.getElementById('coverSizeValue');
+    elements.titleFontSizeValue = document.getElementById('titleFontSizeValue');
+    elements.artistFontSizeValue = document.getElementById('artistFontSizeValue');
     elements.lyricsFontSizeValue = document.getElementById('lyricsFontSizeValue');
+    elements.translationFontSizeValue = document.getElementById('translationFontSizeValue');
     elements.reviewFontSizeValue = document.getElementById('reviewFontSizeValue');
     elements.borderRadiusValue = document.getElementById('borderRadiusValue');
     elements.blurStrengthValue = document.getElementById('blurStrengthValue');
     elements.lyricsRatioValue = document.getElementById('lyricsRatioValue');
     elements.reviewRatioValue = document.getElementById('reviewRatioValue');
+    
+    // Font selectors
+    elements.titleFont = document.getElementById('titleFont');
+    elements.artistFont = document.getElementById('artistFont');
+    elements.lyricsFont = document.getElementById('lyricsFont');
+    elements.translationFont = document.getElementById('translationFont');
+    elements.reviewFont = document.getElementById('reviewFont');
     
     elements.exportBtn = document.getElementById('exportBtn');
     elements.refreshBgBtn = document.getElementById('refreshBgBtn');
@@ -107,6 +127,108 @@ function initializeElements() {
     elements.displayReviewDate = document.getElementById('displayReviewDate');
     
     elements.scaleValue = document.getElementById('scaleValue');
+}
+
+// ============================================
+// System Font Detection
+// ============================================
+function loadSystemFonts() {
+    // Common fonts that are likely to be available on the system
+    const commonFonts = [
+        // Default
+        'sans-serif',
+        'serif',
+        'monospace',
+        // Windows fonts
+        'Microsoft YaHei',
+        'SimHei',
+        'SimSun',
+        'KaiTi',
+        'FangSong',
+        'YouYuan',
+        'STXingkai',
+        'STCaiyun',
+        'STHupo',
+        'STLiti',
+        // macOS fonts
+        'PingFang SC',
+        'Hiragino Sans GB',
+        'STHeiti',
+        'STSong',
+        'STKaiti',
+        // Common fonts
+        'Arial',
+        'Helvetica',
+        'Times New Roman',
+        'Georgia',
+        'Verdana',
+        'Trebuchet MS',
+        // Chinese artistic fonts
+        'Ma Shan Zheng',
+        'ZCOOL XiaoWei',
+        'ZCOOL QingKe HuangYou',
+        'Noto Sans SC',
+        'Noto Serif SC',
+        'Source Han Sans SC',
+        'Source Han Serif SC'
+    ];
+    
+    // Use document.fonts API if available
+    if (document.fonts && document.fonts.check) {
+        availableFonts = commonFonts.filter(font => {
+            try {
+                return document.fonts.check(`12px "${font}"`);
+            } catch (e) {
+                return false;
+            }
+        });
+    } else {
+        // Fallback: assume common fonts are available
+        availableFonts = commonFonts.slice(0, 15);
+    }
+    
+    // Ensure at least basic fonts
+    if (availableFonts.length === 0) {
+        availableFonts = ['sans-serif', 'serif', 'monospace'];
+    }
+    
+    // Populate font selectors
+    populateFontSelectors();
+}
+
+function populateFontSelectors() {
+    const fontSelectors = [
+        elements.titleFont,
+        elements.artistFont,
+        elements.lyricsFont,
+        elements.translationFont,
+        elements.reviewFont
+    ];
+    
+    fontSelectors.forEach(selector => {
+        if (!selector) return;
+        
+        selector.innerHTML = '';
+        availableFonts.forEach(font => {
+            const option = document.createElement('option');
+            option.value = font;
+            option.textContent = font;
+            option.style.fontFamily = font;
+            selector.appendChild(option);
+        });
+    });
+    
+    // Set defaults
+    if (elements.titleFont) elements.titleFont.value = 'Microsoft YaHei';
+    if (elements.artistFont) elements.artistFont.value = 'Microsoft YaHei';
+    if (elements.lyricsFont) elements.lyricsFont.value = 'Microsoft YaHei';
+    if (elements.translationFont) elements.translationFont.value = 'Microsoft YaHei';
+    if (elements.reviewFont) {
+        // Try to set artistic font for review
+        const artisticFonts = ['Ma Shan Zheng', 'KaiTi', 'STKaiti', 'STXingkai'];
+        const found = artisticFonts.find(f => availableFonts.includes(f));
+        elements.reviewFont.value = found || 'serif';
+    }
 }
 
 function initializeEventListeners() {
@@ -145,18 +267,33 @@ function initializeEventListeners() {
     
     // Style sliders
     elements.coverSize.addEventListener('input', updateStyles);
+    elements.titleFontSize.addEventListener('input', updateStyles);
+    elements.artistFontSize.addEventListener('input', updateStyles);
     elements.lyricsFontSize.addEventListener('input', updateStyles);
+    elements.translationFontSize.addEventListener('input', updateStyles);
     elements.reviewFontSize.addEventListener('input', updateStyles);
     elements.borderRadius.addEventListener('input', updateStyles);
     elements.blurStrength.addEventListener('input', updateStyles);
     elements.lyricsRatio.addEventListener('input', updateStyles);
     elements.reviewRatio.addEventListener('input', updateStyles);
     
+    // Font selectors
+    elements.titleFont.addEventListener('change', updateFonts);
+    elements.artistFont.addEventListener('change', updateFonts);
+    elements.lyricsFont.addEventListener('change', updateFonts);
+    elements.translationFont.addEventListener('change', updateFonts);
+    elements.reviewFont.addEventListener('change', updateFonts);
+    
     // Export and refresh buttons
     elements.exportBtn.addEventListener('click', exportScreenshot);
     elements.refreshBgBtn.addEventListener('click', () => {
         if (currentTheme === 'light') {
-            refreshInkColors();
+            // Use album colors if available, otherwise random
+            if (albumPalette.length > 0) {
+                renderInkBackground(albumPalette);
+            } else {
+                refreshInkColors();
+            }
         } else {
             // Re-render dynamic background
             if (currentCoverUrl) {
@@ -174,7 +311,12 @@ function setTheme(theme) {
     document.body.setAttribute('data-theme', theme);
     
     if (theme === 'light') {
-        renderInkBackground();
+        // Use album colors if available, otherwise random
+        if (albumPalette.length > 0) {
+            renderInkBackground(albumPalette);
+        } else {
+            renderInkBackground();
+        }
     } else {
         // Dark theme uses dynamic blur
         if (currentCoverUrl) {
@@ -186,9 +328,43 @@ function setTheme(theme) {
 // ============================================
 // File Upload Handlers
 // ============================================
+function resetAllMetadata() {
+    // Reset text fields
+    elements.trackTitle.value = '';
+    elements.artistName.value = '';
+    elements.lyricsInput.value = '';
+    elements.reviewContent.value = '';
+    elements.reviewAuthor.value = '';
+    elements.reviewDate.value = '';
+    
+    // Reset file names
+    elements.audioFileName.textContent = '未选择文件';
+    elements.coverFileName.textContent = '未选择文件';
+    
+    // Reset duration
+    totalDuration = 225;
+    elements.progressSlider.value = 30;
+    
+    // Reset color palettes
+    currentPalette = [];
+    albumPalette = [];
+    
+    // Reset cover
+    currentCoverUrl = null;
+    
+    // Update displays
+    updateDisplayText();
+    updateLyrics();
+    updateReviewDisplay();
+    updateProgress();
+}
+
 function handleAudioUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
+    
+    // Reset all metadata when importing new song
+    resetAllMetadata();
     
     elements.audioFileName.textContent = file.name;
     
@@ -237,6 +413,9 @@ function handleAudioUpload(e) {
                 const imageUrl = `data:${mimeType};base64,${base64String}`;
                 setCoverImage(imageUrl);
                 elements.coverFileName.textContent = '从音频提取';
+            } else {
+                // Generate default cover if no picture found
+                generateDefaultCover();
             }
             
             // Extract lyrics if available
@@ -252,6 +431,7 @@ function handleAudioUpload(e) {
         },
         onError: function(error) {
             console.log('Error reading ID3 tags:', error);
+            generateDefaultCover();
         }
     });
     
@@ -296,6 +476,7 @@ function extractColorsFromImage(url) {
             const colorThief = new ColorThief();
             const palette = colorThief.getPalette(img, 5);
             currentPalette = palette;
+            albumPalette = palette; // Save album colors for refresh
             
             if (currentTheme === 'light') {
                 renderInkBackground(palette);
@@ -364,6 +545,40 @@ function updateLyrics() {
     const html = renderLyricsHTML(parsedLyrics, currentTimeSeconds, showTranslation);
     
     elements.lyricsContainer.innerHTML = html;
+    
+    // Apply font and size settings to newly rendered lyrics
+    applyLyricsStyles();
+}
+
+function applyLyricsStyles() {
+    // Apply lyrics font size
+    const lyricsFontSize = elements.lyricsFontSize.value + 'px';
+    document.querySelectorAll('.lyric-text').forEach(el => {
+        if (!el.classList.contains('current')) {
+            el.style.fontSize = lyricsFontSize;
+        }
+    });
+    document.querySelectorAll('.lyric-text.current').forEach(el => {
+        el.style.fontSize = (parseInt(elements.lyricsFontSize.value) + 4) + 'px';
+    });
+    
+    // Apply translation font size
+    const translationFontSize = elements.translationFontSize.value + 'px';
+    document.querySelectorAll('.lyric-translation').forEach(el => {
+        el.style.fontSize = translationFontSize;
+    });
+    
+    // Apply lyrics font
+    const lyricsFont = elements.lyricsFont.value;
+    document.querySelectorAll('.lyric-text').forEach(el => {
+        el.style.fontFamily = `"${lyricsFont}", sans-serif`;
+    });
+    
+    // Apply translation font
+    const translationFont = elements.translationFont.value;
+    document.querySelectorAll('.lyric-translation').forEach(el => {
+        el.style.fontFamily = `"${translationFont}", sans-serif`;
+    });
 }
 
 function parseLyrics(lyricsText) {
@@ -484,7 +699,6 @@ function updateVisibility() {
     // Album art
     const showAlbumArt = elements.showAlbumArt.checked;
     elements.albumArtContainer.style.display = showAlbumArt ? '' : 'none';
-    elements.leftColumn.style.display = showAlbumArt ? '' : 'none';
     
     // Progress bar
     const showProgressBar = elements.showProgressBar.checked;
@@ -502,7 +716,10 @@ function updateVisibility() {
 function updateStyles() {
     // Update value displays
     elements.coverSizeValue.textContent = elements.coverSize.value;
+    elements.titleFontSizeValue.textContent = elements.titleFontSize.value;
+    elements.artistFontSizeValue.textContent = elements.artistFontSize.value;
     elements.lyricsFontSizeValue.textContent = elements.lyricsFontSize.value;
+    elements.translationFontSizeValue.textContent = elements.translationFontSize.value;
     elements.reviewFontSizeValue.textContent = elements.reviewFontSize.value;
     elements.borderRadiusValue.textContent = elements.borderRadius.value;
     elements.blurStrengthValue.textContent = elements.blurStrength.value;
@@ -514,6 +731,14 @@ function updateStyles() {
     elements.albumArtContainer.style.width = coverSize;
     elements.albumArtContainer.style.height = coverSize;
     
+    // Apply title font size
+    const titleFontSize = elements.titleFontSize.value + 'px';
+    elements.displayTitle.style.fontSize = titleFontSize;
+    
+    // Apply artist font size
+    const artistFontSize = elements.artistFontSize.value + 'px';
+    elements.displayArtist.style.fontSize = artistFontSize;
+    
     // Apply lyrics font size
     const lyricsFontSize = elements.lyricsFontSize.value + 'px';
     document.querySelectorAll('.lyric-text').forEach(el => {
@@ -523,6 +748,12 @@ function updateStyles() {
     });
     document.querySelectorAll('.lyric-text.current').forEach(el => {
         el.style.fontSize = (parseInt(elements.lyricsFontSize.value) + 4) + 'px';
+    });
+    
+    // Apply translation font size
+    const translationFontSize = elements.translationFontSize.value + 'px';
+    document.querySelectorAll('.lyric-translation').forEach(el => {
+        el.style.fontSize = translationFontSize;
     });
     
     // Apply review font size
@@ -543,6 +774,32 @@ function updateStyles() {
     const reviewRatio = elements.reviewRatio.value;
     elements.lyricsPanel.style.flex = `0 0 ${lyricsRatio}%`;
     elements.reviewPanel.style.flex = `0 0 ${reviewRatio}%`;
+}
+
+function updateFonts() {
+    // Apply title font
+    const titleFont = elements.titleFont.value;
+    elements.displayTitle.style.fontFamily = `"${titleFont}", sans-serif`;
+    
+    // Apply artist font
+    const artistFont = elements.artistFont.value;
+    elements.displayArtist.style.fontFamily = `"${artistFont}", sans-serif`;
+    
+    // Apply lyrics font
+    const lyricsFont = elements.lyricsFont.value;
+    document.querySelectorAll('.lyric-text').forEach(el => {
+        el.style.fontFamily = `"${lyricsFont}", sans-serif`;
+    });
+    
+    // Apply translation font
+    const translationFont = elements.translationFont.value;
+    document.querySelectorAll('.lyric-translation').forEach(el => {
+        el.style.fontFamily = `"${translationFont}", sans-serif`;
+    });
+    
+    // Apply review font
+    const reviewFont = elements.reviewFont.value;
+    elements.displayReviewContent.style.fontFamily = `"${reviewFont}", serif`;
 }
 
 // ============================================
@@ -613,8 +870,23 @@ function hslToRgb(h, s, l) {
 
 function brightenInkColor(rgb) {
     const [h, s, l] = rgbToHsl(rgb[0], rgb[1], rgb[2]);
-    const newL = Math.max(0.45, Math.min(0.82, l));
-    const newS = Math.min(1, s * 1.25);
+    
+    // If color is too dark (l < 0.5), brighten it more aggressively
+    let newL;
+    if (l < 0.35) {
+        // Very dark colors - brighten significantly
+        newL = 0.55 + (l * 0.4);
+    } else if (l < 0.5) {
+        // Dark colors - brighten moderately
+        newL = 0.5 + (l * 0.3);
+    } else {
+        // Already bright - just ensure it's in good range
+        newL = Math.max(0.5, Math.min(0.82, l));
+    }
+    
+    // Boost saturation slightly for more vibrant colors
+    const newS = Math.min(1, s * 1.2);
+    
     return hslToRgb(h, newS, newL);
 }
 
@@ -750,7 +1022,10 @@ async function exportScreenshot() {
 function saveSettings() {
     const settings = {
         coverSize: elements.coverSize.value,
+        titleFontSize: elements.titleFontSize.value,
+        artistFontSize: elements.artistFontSize.value,
         lyricsFontSize: elements.lyricsFontSize.value,
+        translationFontSize: elements.translationFontSize.value,
         reviewFontSize: elements.reviewFontSize.value,
         borderRadius: elements.borderRadius.value,
         blurStrength: elements.blurStrength.value,
@@ -762,7 +1037,13 @@ function saveSettings() {
         showProgressBar: elements.showProgressBar.checked,
         showMetadata: elements.showMetadata.checked,
         showReview: elements.showReview.checked,
-        theme: currentTheme
+        theme: currentTheme,
+        // Font settings
+        titleFont: elements.titleFont.value,
+        artistFont: elements.artistFont.value,
+        lyricsFont: elements.lyricsFont.value,
+        translationFont: elements.translationFont.value,
+        reviewFont: elements.reviewFont.value
     };
     
     localStorage.setItem('musicSummarySettings', JSON.stringify(settings));
@@ -777,7 +1058,10 @@ function loadSettings() {
         
         // Apply slider values
         if (settings.coverSize) elements.coverSize.value = settings.coverSize;
+        if (settings.titleFontSize) elements.titleFontSize.value = settings.titleFontSize;
+        if (settings.artistFontSize) elements.artistFontSize.value = settings.artistFontSize;
         if (settings.lyricsFontSize) elements.lyricsFontSize.value = settings.lyricsFontSize;
+        if (settings.translationFontSize) elements.translationFontSize.value = settings.translationFontSize;
         if (settings.reviewFontSize) elements.reviewFontSize.value = settings.reviewFontSize;
         if (settings.borderRadius) elements.borderRadius.value = settings.borderRadius;
         if (settings.blurStrength) elements.blurStrength.value = settings.blurStrength;
@@ -792,11 +1076,29 @@ function loadSettings() {
         if (settings.showMetadata !== undefined) elements.showMetadata.checked = settings.showMetadata;
         if (settings.showReview !== undefined) elements.showReview.checked = settings.showReview;
         
+        // Apply font values
+        if (settings.titleFont && availableFonts.includes(settings.titleFont)) {
+            elements.titleFont.value = settings.titleFont;
+        }
+        if (settings.artistFont && availableFonts.includes(settings.artistFont)) {
+            elements.artistFont.value = settings.artistFont;
+        }
+        if (settings.lyricsFont && availableFonts.includes(settings.lyricsFont)) {
+            elements.lyricsFont.value = settings.lyricsFont;
+        }
+        if (settings.translationFont && availableFonts.includes(settings.translationFont)) {
+            elements.translationFont.value = settings.translationFont;
+        }
+        if (settings.reviewFont && availableFonts.includes(settings.reviewFont)) {
+            elements.reviewFont.value = settings.reviewFont;
+        }
+        
         // Apply theme
         if (settings.theme) currentTheme = settings.theme;
         
         // Update displays
         updateStyles();
+        updateFonts();
         updateVisibility();
         
     } catch (e) {
