@@ -7,29 +7,13 @@
 // ============================================
 // Global Variables & State
 // ============================================
-let currentMode = 'player'; // player, review, artist
 let currentTheme = 'dark';
 let currentCoverUrl = null;
 let totalDuration = 225; // 默认 3:45
 let currentPalette = [];
-let audioContext = null;
 
 // DOM Element References
 const elements = {};
-
-// Default Settings
-const defaultSettings = {
-    coverSize: 1100,
-    lyricsFontSize: 48,
-    borderRadius: 24,
-    blurStrength: 80,
-    showLyrics: true,
-    showTranslation: true,
-    showAlbumArt: true,
-    showProgressBar: true,
-    showControls: true,
-    showMetadata: true
-};
 
 // ============================================
 // Initialization
@@ -38,11 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeElements();
     initializeEventListeners();
     loadSettings();
-    setMode('player');
     setTheme('dark');
     updatePreviewScale();
     generateDefaultCover();
     renderInkBackground();
+    updateLyrics();
+    updateReviewDisplay();
     
     window.addEventListener('resize', updatePreviewScale);
 });
@@ -56,34 +41,38 @@ function initializeElements() {
     
     elements.trackTitle = document.getElementById('trackTitle');
     elements.artistName = document.getElementById('artistName');
-    elements.albumName = document.getElementById('albumName');
     elements.lyricsInput = document.getElementById('lyricsInput');
     
     elements.showLyrics = document.getElementById('showLyrics');
     elements.showTranslation = document.getElementById('showTranslation');
     elements.showAlbumArt = document.getElementById('showAlbumArt');
     elements.showProgressBar = document.getElementById('showProgressBar');
-    elements.showControls = document.getElementById('showControls');
     elements.showMetadata = document.getElementById('showMetadata');
+    elements.showReview = document.getElementById('showReview');
     
     elements.progressSlider = document.getElementById('progressSlider');
     elements.currentTime = document.getElementById('currentTime');
     elements.totalTime = document.getElementById('totalTime');
     
-    elements.reviewTitle = document.getElementById('reviewTitle');
     elements.reviewContent = document.getElementById('reviewContent');
     elements.reviewAuthor = document.getElementById('reviewAuthor');
-    elements.reviewSection = document.getElementById('reviewSection');
+    elements.reviewDate = document.getElementById('reviewDate');
     
     elements.coverSize = document.getElementById('coverSize');
     elements.lyricsFontSize = document.getElementById('lyricsFontSize');
+    elements.reviewFontSize = document.getElementById('reviewFontSize');
     elements.borderRadius = document.getElementById('borderRadius');
     elements.blurStrength = document.getElementById('blurStrength');
+    elements.lyricsRatio = document.getElementById('lyricsRatio');
+    elements.reviewRatio = document.getElementById('reviewRatio');
     
     elements.coverSizeValue = document.getElementById('coverSizeValue');
     elements.lyricsFontSizeValue = document.getElementById('lyricsFontSizeValue');
+    elements.reviewFontSizeValue = document.getElementById('reviewFontSizeValue');
     elements.borderRadiusValue = document.getElementById('borderRadiusValue');
     elements.blurStrengthValue = document.getElementById('blurStrengthValue');
+    elements.lyricsRatioValue = document.getElementById('lyricsRatioValue');
+    elements.reviewRatioValue = document.getElementById('reviewRatioValue');
     
     elements.exportBtn = document.getElementById('exportBtn');
     elements.refreshBgBtn = document.getElementById('refreshBgBtn');
@@ -94,59 +83,33 @@ function initializeElements() {
     elements.dynamicBg = document.getElementById('dynamicBg');
     elements.overlayLayer = document.getElementById('overlayLayer');
     
-    elements.playerContent = document.getElementById('playerContent');
-    elements.reviewContent_el = document.getElementById('reviewContent');
-    elements.artistContent = document.getElementById('artistContent');
+    elements.leftColumn = document.getElementById('leftColumn');
+    elements.rightColumn = document.getElementById('rightColumn');
     
     elements.albumArt = document.getElementById('albumArt');
-    elements.albumArtReview = document.getElementById('albumArtReview');
-    elements.artistImage = document.getElementById('artistImage');
-    
     elements.albumArtContainer = document.getElementById('albumArtContainer');
-    elements.albumArtContainerReview = document.getElementById('albumArtContainerReview');
-    elements.artistImageContainer = document.getElementById('artistImageContainer');
     
     elements.displayTitle = document.getElementById('displayTitle');
     elements.displayArtist = document.getElementById('displayArtist');
-    elements.displayTitleReview = document.getElementById('displayTitleReview');
-    elements.displayArtistReview = document.getElementById('displayArtistReview');
-    elements.displayArtistTitle = document.getElementById('displayArtistTitle');
-    elements.displayArtistSubtitle = document.getElementById('displayArtistSubtitle');
     
     elements.lyricsContainer = document.getElementById('lyricsContainer');
-    elements.lyricsContainerReview = document.getElementById('lyricsContainerReview');
     elements.lyricsPanel = document.getElementById('lyricsPanel');
-    elements.lyricsPanelReview = document.getElementById('lyricsPanelReview');
     
     elements.progressBarFill = document.getElementById('progressBarFill');
     elements.displayCurrentTime = document.getElementById('displayCurrentTime');
     elements.displayTotalTime = document.getElementById('displayTotalTime');
     elements.progressPanel = document.getElementById('progressPanel');
-    elements.controlsPanel = document.getElementById('controlsPanel');
     elements.metadataPanel = document.getElementById('metadataPanel');
-    elements.metadataPanelReview = document.getElementById('metadataPanelReview');
     
     elements.reviewPanel = document.getElementById('reviewPanel');
-    elements.displayReviewTitle = document.getElementById('displayReviewTitle');
     elements.displayReviewContent = document.getElementById('displayReviewContent');
     elements.displayReviewAuthor = document.getElementById('displayReviewAuthor');
-    
-    elements.artistReviewPanel = document.getElementById('artistReviewPanel');
-    elements.displayArtistReview = document.getElementById('displayArtistReview');
+    elements.displayReviewDate = document.getElementById('displayReviewDate');
     
     elements.scaleValue = document.getElementById('scaleValue');
 }
 
 function initializeEventListeners() {
-    // Mode buttons
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            setMode(btn.dataset.mode);
-        });
-    });
-    
     // Theme buttons
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -163,20 +126,19 @@ function initializeEventListeners() {
     // Text inputs - live update
     elements.trackTitle.addEventListener('input', updateDisplayText);
     elements.artistName.addEventListener('input', updateDisplayText);
-    elements.albumName.addEventListener('input', updateDisplayText);
     elements.lyricsInput.addEventListener('input', updateLyrics);
     
-    elements.reviewTitle.addEventListener('input', updateReviewDisplay);
     elements.reviewContent.addEventListener('input', updateReviewDisplay);
     elements.reviewAuthor.addEventListener('input', updateReviewDisplay);
+    elements.reviewDate.addEventListener('input', updateReviewDisplay);
     
     // Checkbox inputs
     elements.showLyrics.addEventListener('change', updateVisibility);
     elements.showTranslation.addEventListener('change', updateLyrics);
     elements.showAlbumArt.addEventListener('change', updateVisibility);
     elements.showProgressBar.addEventListener('change', updateVisibility);
-    elements.showControls.addEventListener('change', updateVisibility);
     elements.showMetadata.addEventListener('change', updateVisibility);
+    elements.showReview.addEventListener('change', updateVisibility);
     
     // Progress slider
     elements.progressSlider.addEventListener('input', updateProgress);
@@ -184,8 +146,11 @@ function initializeEventListeners() {
     // Style sliders
     elements.coverSize.addEventListener('input', updateStyles);
     elements.lyricsFontSize.addEventListener('input', updateStyles);
+    elements.reviewFontSize.addEventListener('input', updateStyles);
     elements.borderRadius.addEventListener('input', updateStyles);
     elements.blurStrength.addEventListener('input', updateStyles);
+    elements.lyricsRatio.addEventListener('input', updateStyles);
+    elements.reviewRatio.addEventListener('input', updateStyles);
     
     // Export and refresh buttons
     elements.exportBtn.addEventListener('click', exportScreenshot);
@@ -193,43 +158,17 @@ function initializeEventListeners() {
         if (currentTheme === 'light') {
             refreshInkColors();
         } else {
-            renderInkBackground();
+            // Re-render dynamic background
+            if (currentCoverUrl) {
+                elements.dynamicBg.style.backgroundImage = `url(${currentCoverUrl})`;
+            }
         }
     });
 }
 
 // ============================================
-// Mode & Theme Management
+// Theme Management
 // ============================================
-function setMode(mode) {
-    currentMode = mode;
-    
-    // Hide all content
-    document.getElementById('playerContent').classList.add('hidden');
-    document.getElementById('reviewContent').classList.add('hidden');
-    document.getElementById('artistContent').classList.add('hidden');
-    
-    // Show selected mode
-    switch(mode) {
-        case 'player':
-            document.getElementById('playerContent').classList.remove('hidden');
-            elements.reviewSection.style.display = 'none';
-            break;
-        case 'review':
-            document.getElementById('reviewContent').classList.remove('hidden');
-            elements.reviewSection.style.display = 'block';
-            break;
-        case 'artist':
-            document.getElementById('artistContent').classList.remove('hidden');
-            elements.reviewSection.style.display = 'block';
-            break;
-    }
-    
-    updateDisplayText();
-    updateLyrics();
-    updateReviewDisplay();
-}
-
 function setTheme(theme) {
     currentTheme = theme;
     document.body.setAttribute('data-theme', theme);
@@ -257,6 +196,7 @@ function handleAudioUpload(e) {
     jsmediatags.read(file, {
         onSuccess: function(tag) {
             const tags = tag.tags;
+            console.log('ID3 Tags:', tags);
             
             // Set title
             if (tags.title) {
@@ -268,17 +208,35 @@ function handleAudioUpload(e) {
                 elements.artistName.value = tags.artist;
             }
             
-            // Set album
-            if (tags.album) {
-                elements.albumName.value = tags.album;
-            }
-            
-            // Extract cover if available and no cover uploaded
-            if (tags.picture && !currentCoverUrl) {
+            // Extract cover - always try to extract
+            if (tags.picture) {
                 const picture = tags.picture;
-                const base64String = arrayBufferToBase64(picture.data);
-                const imageUrl = `data:${picture.format};base64,${base64String}`;
+                console.log('Found picture:', picture.format, picture.data.length);
+                
+                // Convert to base64
+                let base64String = '';
+                const bytes = new Uint8Array(picture.data);
+                for (let i = 0; i < bytes.length; i++) {
+                    base64String += String.fromCharCode(bytes[i]);
+                }
+                base64String = window.btoa(base64String);
+                
+                // Determine MIME type
+                let mimeType = picture.format;
+                if (!mimeType || mimeType === '') {
+                    // Try to detect from data
+                    if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
+                        mimeType = 'image/jpeg';
+                    } else if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+                        mimeType = 'image/png';
+                    } else {
+                        mimeType = 'image/jpeg'; // default
+                    }
+                }
+                
+                const imageUrl = `data:${mimeType};base64,${base64String}`;
                 setCoverImage(imageUrl);
+                elements.coverFileName.textContent = '从音频提取';
             }
             
             // Extract lyrics if available
@@ -318,10 +276,8 @@ function handleCoverUpload(e) {
 function setCoverImage(url) {
     currentCoverUrl = url;
     
-    // Set cover for all modes
+    // Set cover image
     elements.albumArt.src = url;
-    elements.albumArtReview.src = url;
-    elements.artistImage.src = url;
     
     // Set dynamic background for dark theme
     if (currentTheme === 'dark') {
@@ -351,15 +307,6 @@ function extractColorsFromImage(url) {
     img.src = url;
 }
 
-function arrayBufferToBase64(buffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary);
-}
-
 function generateDefaultCover() {
     const canvas = document.createElement('canvas');
     canvas.width = 800;
@@ -373,12 +320,24 @@ function generateDefaultCover() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 800, 800);
     
-    // Add music note icon
+    // Add simple music icon (no emoji)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 20;
+    ctx.beginPath();
+    // Draw music note shape
+    ctx.moveTo(320, 550);
+    ctx.lineTo(320, 250);
+    ctx.lineTo(520, 200);
+    ctx.lineTo(520, 500);
+    ctx.stroke();
+    // Draw note heads
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.font = '200px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🎵', 400, 400);
+    ctx.beginPath();
+    ctx.ellipse(280, 560, 60, 40, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(480, 510, 60, 40, -0.3, 0, Math.PI * 2);
+    ctx.fill();
     
     const url = canvas.toDataURL();
     setCoverImage(url);
@@ -390,19 +349,9 @@ function generateDefaultCover() {
 function updateDisplayText() {
     const title = elements.trackTitle.value || '歌曲名称';
     const artist = elements.artistName.value || '艺术家';
-    const album = elements.albumName.value || '';
     
-    // Player mode
     elements.displayTitle.textContent = title;
     elements.displayArtist.textContent = artist;
-    
-    // Review mode
-    elements.displayTitleReview.textContent = title;
-    elements.displayArtistReview.textContent = artist;
-    
-    // Artist mode
-    elements.displayArtistTitle.textContent = artist;
-    elements.displayArtistSubtitle.textContent = album || title;
 }
 
 function updateLyrics() {
@@ -415,7 +364,6 @@ function updateLyrics() {
     const html = renderLyricsHTML(parsedLyrics, currentTimeSeconds, showTranslation);
     
     elements.lyricsContainer.innerHTML = html;
-    elements.lyricsContainerReview.innerHTML = html;
 }
 
 function parseLyrics(lyricsText) {
@@ -467,9 +415,9 @@ function renderLyricsHTML(lyrics, currentTime, showTranslation) {
         }
     }
     
-    // Show lyrics around current position
+    // Show lyrics around current position (4 lines as per target-style)
     const startIndex = Math.max(0, currentIndex - 1);
-    const endIndex = Math.min(lyrics.length, currentIndex + 5);
+    const endIndex = Math.min(lyrics.length, currentIndex + 4);
     
     let html = '';
     for (let i = startIndex; i < endIndex; i++) {
@@ -486,14 +434,13 @@ function renderLyricsHTML(lyrics, currentTime, showTranslation) {
 }
 
 function updateReviewDisplay() {
-    const title = elements.reviewTitle.value || '评价标题';
     const content = elements.reviewContent.value || '在这里输入您对这首歌曲的评价...';
     const author = elements.reviewAuthor.value || '署名';
+    const date = elements.reviewDate.value || new Date().toLocaleDateString('zh-CN').replace(/\//g, '.');
     
-    elements.displayReviewTitle.textContent = title;
     elements.displayReviewContent.textContent = content;
-    elements.displayReviewAuthor.textContent = `— ${author}`;
-    elements.displayArtistReview.textContent = content;
+    elements.displayReviewAuthor.textContent = author;
+    elements.displayReviewDate.textContent = date;
 }
 
 function updateProgress() {
@@ -533,59 +480,69 @@ function updateVisibility() {
     // Lyrics
     const showLyrics = elements.showLyrics.checked;
     elements.lyricsPanel.style.display = showLyrics ? '' : 'none';
-    elements.lyricsPanelReview.style.display = showLyrics ? '' : 'none';
     
     // Album art
     const showAlbumArt = elements.showAlbumArt.checked;
     elements.albumArtContainer.style.display = showAlbumArt ? '' : 'none';
-    elements.albumArtContainerReview.style.display = showAlbumArt ? '' : 'none';
-    elements.artistImageContainer.style.display = showAlbumArt ? '' : 'none';
+    elements.leftColumn.style.display = showAlbumArt ? '' : 'none';
     
     // Progress bar
     const showProgressBar = elements.showProgressBar.checked;
     elements.progressPanel.style.display = showProgressBar ? '' : 'none';
     
-    // Controls
-    const showControls = elements.showControls.checked;
-    elements.controlsPanel.style.display = showControls ? '' : 'none';
-    
     // Metadata
     const showMetadata = elements.showMetadata.checked;
     elements.metadataPanel.style.display = showMetadata ? '' : 'none';
-    elements.metadataPanelReview.style.display = showMetadata ? '' : 'none';
+    
+    // Review
+    const showReview = elements.showReview.checked;
+    elements.reviewPanel.style.display = showReview ? '' : 'none';
 }
 
 function updateStyles() {
     // Update value displays
     elements.coverSizeValue.textContent = elements.coverSize.value;
     elements.lyricsFontSizeValue.textContent = elements.lyricsFontSize.value;
+    elements.reviewFontSizeValue.textContent = elements.reviewFontSize.value;
     elements.borderRadiusValue.textContent = elements.borderRadius.value;
     elements.blurStrengthValue.textContent = elements.blurStrength.value;
+    elements.lyricsRatioValue.textContent = elements.lyricsRatio.value;
+    elements.reviewRatioValue.textContent = elements.reviewRatio.value;
     
     // Apply cover size
     const coverSize = elements.coverSize.value + 'px';
     elements.albumArtContainer.style.width = coverSize;
     elements.albumArtContainer.style.height = coverSize;
-    elements.albumArtContainerReview.style.width = coverSize;
-    elements.albumArtContainerReview.style.height = coverSize;
-    elements.artistImageContainer.style.width = coverSize;
-    elements.artistImageContainer.style.height = coverSize;
     
     // Apply lyrics font size
     const lyricsFontSize = elements.lyricsFontSize.value + 'px';
     document.querySelectorAll('.lyric-text').forEach(el => {
-        el.style.fontSize = lyricsFontSize;
+        if (!el.classList.contains('current')) {
+            el.style.fontSize = lyricsFontSize;
+        }
     });
+    document.querySelectorAll('.lyric-text.current').forEach(el => {
+        el.style.fontSize = (parseInt(elements.lyricsFontSize.value) + 4) + 'px';
+    });
+    
+    // Apply review font size
+    const reviewFontSize = elements.reviewFontSize.value + 'px';
+    elements.displayReviewContent.style.fontSize = reviewFontSize;
     
     // Apply border radius
     const borderRadius = elements.borderRadius.value + 'px';
     elements.albumArtContainer.style.borderRadius = borderRadius;
-    elements.albumArtContainerReview.style.borderRadius = borderRadius;
     
     // Apply blur strength
     const blurStrength = elements.blurStrength.value + 'px';
     elements.dynamicBg.style.filter = `blur(${blurStrength})`;
     elements.overlayLayer.style.backdropFilter = `blur(${parseInt(blurStrength) * 0.75}px)`;
+    
+    // Apply layout ratios
+    const lyricsRatio = elements.lyricsRatio.value;
+    const reviewRatio = elements.reviewRatio.value;
+    elements.lyricsPanel.style.flex = `0 0 ${lyricsRatio}%`;
+    elements.reviewPanel.style.flex = `0 0 ${reviewRatio}%`;
 }
 
 // ============================================
@@ -593,13 +550,15 @@ function updateStyles() {
 // ============================================
 function updatePreviewScale() {
     const container = elements.previewContainer;
-    const parent = container.parentElement;
+    const wrapper = container.parentElement;
     
-    const parentWidth = parent.clientWidth - 40; // padding
-    const parentHeight = parent.clientHeight - 40;
+    // Get available space
+    const availableWidth = wrapper.clientWidth - 40;
+    const availableHeight = wrapper.clientHeight - 40;
     
-    const scaleX = parentWidth / 3840;
-    const scaleY = parentHeight / 2160;
+    // Calculate scale to fit 3840x2160 into available space
+    const scaleX = availableWidth / 3840;
+    const scaleY = availableHeight / 2160;
     const scale = Math.min(scaleX, scaleY, 1);
     
     container.style.transform = `scale(${scale})`;
@@ -717,7 +676,7 @@ function renderInkBackground(palette, options = {}) {
         );
     }
     
-    elements.bgLayer.style.backgroundColor = '#ffffff';
+    elements.bgLayer.style.backgroundColor = '#F2EFE4';
     elements.bgLayer.style.backgroundImage = gradients.join(', ');
     elements.bgLayer.style.backgroundSize = '100% 100%';
 }
@@ -727,17 +686,13 @@ function refreshInkColors() {
     renderInkBackground(randomPalette);
 }
 
-function refreshInkPositions() {
-    renderInkBackground(currentPalette, { alreadyBright: true });
-}
-
 // ============================================
 // Export Screenshot
 // ============================================
 async function exportScreenshot() {
     const btn = elements.exportBtn;
     const originalText = btn.textContent;
-    btn.textContent = '⏳ 正在生成...';
+    btn.textContent = '正在生成...';
     btn.disabled = true;
     
     try {
@@ -747,9 +702,9 @@ async function exportScreenshot() {
         container.style.transform = 'none';
         
         // Wait for styles to apply
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        // Capture with html2canvas
+        // Capture with html2canvas at exact 3840x2160
         const canvas = await html2canvas(container, {
             width: 3840,
             height: 2160,
@@ -757,7 +712,9 @@ async function exportScreenshot() {
             useCORS: true,
             allowTaint: true,
             backgroundColor: null,
-            logging: false
+            logging: false,
+            windowWidth: 3840,
+            windowHeight: 2160
         });
         
         // Restore transform
@@ -771,7 +728,7 @@ async function exportScreenshot() {
         link.href = canvas.toDataURL('image/png', 1.0);
         link.click();
         
-        btn.textContent = '✅ 导出成功！';
+        btn.textContent = '导出成功!';
         setTimeout(() => {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -779,7 +736,7 @@ async function exportScreenshot() {
         
     } catch (error) {
         console.error('Export failed:', error);
-        btn.textContent = '❌ 导出失败';
+        btn.textContent = '导出失败';
         setTimeout(() => {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -794,16 +751,18 @@ function saveSettings() {
     const settings = {
         coverSize: elements.coverSize.value,
         lyricsFontSize: elements.lyricsFontSize.value,
+        reviewFontSize: elements.reviewFontSize.value,
         borderRadius: elements.borderRadius.value,
         blurStrength: elements.blurStrength.value,
+        lyricsRatio: elements.lyricsRatio.value,
+        reviewRatio: elements.reviewRatio.value,
         showLyrics: elements.showLyrics.checked,
         showTranslation: elements.showTranslation.checked,
         showAlbumArt: elements.showAlbumArt.checked,
         showProgressBar: elements.showProgressBar.checked,
-        showControls: elements.showControls.checked,
         showMetadata: elements.showMetadata.checked,
-        theme: currentTheme,
-        mode: currentMode
+        showReview: elements.showReview.checked,
+        theme: currentTheme
     };
     
     localStorage.setItem('musicSummarySettings', JSON.stringify(settings));
@@ -817,46 +776,24 @@ function loadSettings() {
         const settings = JSON.parse(saved);
         
         // Apply slider values
-        if (settings.coverSize) {
-            elements.coverSize.value = settings.coverSize;
-        }
-        if (settings.lyricsFontSize) {
-            elements.lyricsFontSize.value = settings.lyricsFontSize;
-        }
-        if (settings.borderRadius) {
-            elements.borderRadius.value = settings.borderRadius;
-        }
-        if (settings.blurStrength) {
-            elements.blurStrength.value = settings.blurStrength;
-        }
+        if (settings.coverSize) elements.coverSize.value = settings.coverSize;
+        if (settings.lyricsFontSize) elements.lyricsFontSize.value = settings.lyricsFontSize;
+        if (settings.reviewFontSize) elements.reviewFontSize.value = settings.reviewFontSize;
+        if (settings.borderRadius) elements.borderRadius.value = settings.borderRadius;
+        if (settings.blurStrength) elements.blurStrength.value = settings.blurStrength;
+        if (settings.lyricsRatio) elements.lyricsRatio.value = settings.lyricsRatio;
+        if (settings.reviewRatio) elements.reviewRatio.value = settings.reviewRatio;
         
         // Apply checkbox values
-        if (settings.showLyrics !== undefined) {
-            elements.showLyrics.checked = settings.showLyrics;
-        }
-        if (settings.showTranslation !== undefined) {
-            elements.showTranslation.checked = settings.showTranslation;
-        }
-        if (settings.showAlbumArt !== undefined) {
-            elements.showAlbumArt.checked = settings.showAlbumArt;
-        }
-        if (settings.showProgressBar !== undefined) {
-            elements.showProgressBar.checked = settings.showProgressBar;
-        }
-        if (settings.showControls !== undefined) {
-            elements.showControls.checked = settings.showControls;
-        }
-        if (settings.showMetadata !== undefined) {
-            elements.showMetadata.checked = settings.showMetadata;
-        }
+        if (settings.showLyrics !== undefined) elements.showLyrics.checked = settings.showLyrics;
+        if (settings.showTranslation !== undefined) elements.showTranslation.checked = settings.showTranslation;
+        if (settings.showAlbumArt !== undefined) elements.showAlbumArt.checked = settings.showAlbumArt;
+        if (settings.showProgressBar !== undefined) elements.showProgressBar.checked = settings.showProgressBar;
+        if (settings.showMetadata !== undefined) elements.showMetadata.checked = settings.showMetadata;
+        if (settings.showReview !== undefined) elements.showReview.checked = settings.showReview;
         
-        // Apply theme and mode
-        if (settings.theme) {
-            currentTheme = settings.theme;
-        }
-        if (settings.mode) {
-            currentMode = settings.mode;
-        }
+        // Apply theme
+        if (settings.theme) currentTheme = settings.theme;
         
         // Update displays
         updateStyles();

@@ -1,6 +1,7 @@
 /* ============================================
    Music Summary - Style Sheet
    支持 3840x2160 (4K) 输出
+   根据 target-style.json 精确布局
    ============================================ */
 
 /* CSS Variables */
@@ -8,32 +9,40 @@
     /* Dark Theme (Default) */
     --bg-primary: #0a0a0a;
     --bg-secondary: #1a1a1a;
-    --bg-card: rgba(30, 30, 30, 0.8);
+    --bg-card: rgba(255, 255, 255, 0.4);
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-muted: rgba(255, 255, 255, 0.5);
-    --accent-color: #ff4081;
+    --accent-color: #8C8C8C;
     --border-color: rgba(255, 255, 255, 0.1);
-    --shadow-color: rgba(0, 0, 0, 0.5);
+    --shadow-color: rgba(0, 0, 0, 0.25);
     --overlay-color: rgba(0, 0, 0, 0.4);
 
-    /* Dimensions */
+    /* Fixed 4K Dimensions - 16:9 ratio */
     --output-width: 3840px;
     --output-height: 2160px;
     --sidebar-width: 380px;
+
+    /* Layout from target-style.json */
+    --container-padding: 120px;
+    --column-gap: 120px;
+    --left-column-width: 45%;
+    --right-column-width: 55%;
+    --album-size: 1100px;
+    --album-radius: 24px;
 }
 
 /* Light Theme */
 [data-theme="light"] {
-    --bg-primary: #f5f5f5;
+    --bg-primary: #F2EFE4;
     --bg-secondary: #ffffff;
-    --bg-card: rgba(255, 255, 255, 0.8);
+    --bg-card: rgba(255, 255, 255, 0.4);
     --text-primary: #333333;
-    --text-secondary: rgba(51, 51, 51, 0.8);
-    --text-muted: rgba(51, 51, 51, 0.6);
-    --accent-color: #e91e63;
+    --text-secondary: #666666;
+    --text-muted: #8C8C8C;
+    --accent-color: #8C8C8C;
     --border-color: rgba(0, 0, 0, 0.1);
-    --shadow-color: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.25);
     --overlay-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -44,10 +53,9 @@
     box-sizing: border-box;
 }
 
-html,
-body {
+htmlbody {
     height: 100%;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Noto Sans JP', 'Roboto', 'Microsoft YaHei', sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     overflow: hidden;
@@ -115,18 +123,14 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* Mode & Theme Buttons */
-.mode-buttons,
+/* Theme Buttons */
 .theme-buttons {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
 }
 
-.mode-btn,
 .theme-btn {
     flex: 1;
-    min-width: 100px;
     padding: 10px 12px;
     border: 1px solid var(--border-color);
     background: transparent;
@@ -137,16 +141,14 @@ body {
     transition: all 0.2s ease;
 }
 
-.mode-btn:hover,
 .theme-btn:hover {
     background: var(--border-color);
 }
 
-.mode-btn.active,
 .theme-btn.active {
-    background: var(--accent-color);
+    background: #666;
     color: white;
-    border-color: var(--accent-color);
+    border-color: #666;
 }
 
 /* Upload Buttons */
@@ -168,8 +170,8 @@ body {
 }
 
 .upload-btn:hover {
-    border-color: var(--accent-color);
-    background: rgba(255, 64, 129, 0.1);
+    border-color: #666;
+    background: rgba(102, 102, 102, 0.1);
 }
 
 .file-name {
@@ -210,7 +212,7 @@ body {
 .input-group input[type="text"]:focus,
 .input-group textarea:focus {
     outline: none;
-    border-color: var(--accent-color);
+    border-color: #666;
 }
 
 /* Checkbox Groups */
@@ -232,7 +234,7 @@ body {
 .checkbox-group input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    accent-color: var(--accent-color);
+    accent-color: #666;
 }
 
 /* Slider Groups */
@@ -261,7 +263,7 @@ body {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: var(--accent-color);
+    background: #666;
     cursor: pointer;
 }
 
@@ -297,14 +299,14 @@ body {
 }
 
 .export-btn {
-    background: var(--accent-color);
+    background: #444;
     color: white;
 }
 
 .export-btn:hover {
-    background: #e91e63;
+    background: #555;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 64, 129, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .refresh-btn {
@@ -333,7 +335,6 @@ body {
 .preview-area {
     flex: 1;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     background: #111;
@@ -342,14 +343,23 @@ body {
     position: relative;
 }
 
+.preview-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Preview Container - Fixed 3840x2160 */
 .preview-container {
-    width: var(--output-width);
-    height: var(--output-height);
+    width: 3840px;
+    height: 2160px;
     position: relative;
     transform-origin: center center;
     background: var(--bg-primary);
-    border-radius: 0;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 /* Background Layers */
@@ -359,7 +369,7 @@ body {
     z-index: 0;
     background-color: #ffffff;
     background-size: 100% 100%;
-    transition: all 0.5s ease;
+    transition: background 0.5s ease;
 }
 
 .dynamic-bg {
@@ -367,7 +377,7 @@ body {
     inset: 0;
     z-index: 1;
     opacity: 0.7;
-    transform: scale(1.1);
+    transform: scale(1.15);
     filter: blur(80px);
     background-size: cover;
     background-position: center;
@@ -392,59 +402,45 @@ body {
     backdrop-filter: none;
 }
 
-/* Preview Content - Base */
+/* ============================================
+   Preview Content - Layout from target-style.json
+   ============================================ */
 .preview-content {
     position: absolute;
     inset: 0;
     z-index: 10;
     display: flex;
+    flex-direction: row;
     padding: 120px;
     gap: 120px;
 }
 
-.preview-content.hidden {
-    display: none;
-}
-
-/* Player Mode Layout */
-.player-mode .left-column {
-    flex: 0 0 45%;
+/* Left Column - 45% width, centered */
+.left-column {
+    width: 45%;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.player-mode .right-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 40px;
-}
-
-/* Review Mode Layout */
-.review-mode .left-column {
-    flex: 0 0 40%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.review-mode .right-column {
+/* Right Column - 55% width, space-between */
+.right-column {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    padding-left: 0;
 }
 
-/* Album Art */
+/* Album Art - 1100x1100 from target-style.json */
 .album-art-container {
     width: 1100px;
     height: 1100px;
     border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 40px 80px var(--shadow-color);
-    transition: all 0.3s ease;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
 }
 
 .album-art {
@@ -454,9 +450,10 @@ body {
     display: block;
 }
 
-/* Metadata Panel */
+/* Metadata Panel - 15% height */
 .metadata-panel {
-    padding: 20px 0;
+    flex: 0 0 auto;
+    margin-bottom: 40px;
 }
 
 .track-title {
@@ -473,18 +470,19 @@ body {
     font-weight: 400;
 }
 
-/* Lyrics Panel */
+/* Lyrics Panel - 40% height with mask */
 .lyrics-panel {
-    flex: 1;
+    flex: 0 0 40%;
     overflow: hidden;
-    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    margin-bottom: 60px;
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
 }
 
 .lyrics-container {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 28px;
 }
 
 .lyric-line {
@@ -495,34 +493,64 @@ body {
     font-size: 48px;
     font-weight: 500;
     color: var(--text-primary);
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .lyric-text.current {
-    font-size: 56px;
-    font-weight: 700;
-    color: var(--accent-color);
+    font-size: 52px;
+    font-weight: 600;
 }
 
 .lyric-translation {
     font-size: 32px;
     color: var(--text-muted);
-    margin-top: 8px;
-    font-style: italic;
+    margin-top: 10px;
+    font-style: normal;
 }
 
-/* Review Lyrics - Smaller */
-.review-lyrics .lyric-text {
+/* Review Panel - 35% height with background */
+.review-panel {
+    flex: 0 0 35%;
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    backdrop-filter: blur(20px);
+}
+
+.review-text {
     font-size: 36px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    font-family: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', serif;
+    flex: 1;
 }
 
-.review-lyrics .lyric-translation {
+.review-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.review-author {
     font-size: 24px;
+    color: var(--text-muted);
+}
+
+.review-date {
+    font-size: 24px;
+    color: var(--text-muted);
 }
 
 /* Progress Panel */
 .progress-panel {
-    padding: 20px 0;
+    flex: 0 0 auto;
+    margin-top: 40px;
 }
 
 .progress-bar-container {
@@ -543,7 +571,7 @@ body {
 
 .progress-bar-fill {
     height: 100%;
-    background: var(--accent-color);
+    background: var(--text-secondary);
     border-radius: 4px;
     width: 30%;
     transition: width 0.1s linear;
@@ -552,137 +580,9 @@ body {
 .progress-time {
     display: flex;
     justify-content: space-between;
-    margin-top: 12px;
+    margin-top: 16px;
     font-size: 28px;
     color: var(--text-muted);
-}
-
-/* Controls Panel */
-.controls-panel {
-    display: flex;
-    justify-content: center;
-    gap: 48px;
-    padding: 20px 0;
-}
-
-.control-btn {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    font-size: 32px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-[data-theme="light"] .control-btn {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-.control-btn:hover {
-    background: var(--accent-color);
-    transform: scale(1.1);
-}
-
-.control-btn.play-btn {
-    width: 100px;
-    height: 100px;
-    font-size: 40px;
-    background: var(--accent-color);
-}
-
-/* Review Panel */
-.review-panel {
-    background: var(--bg-card);
-    border-radius: 20px;
-    padding: 48px;
-    backdrop-filter: blur(20px);
-}
-
-.review-title {
-    font-size: 36px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 24px;
-}
-
-.review-text {
-    font-size: 32px;
-    color: var(--text-secondary);
-    line-height: 1.8;
-    margin-bottom: 24px;
-    font-family: 'KaiTi', 'STKaiti', serif;
-}
-
-.review-author {
-    font-size: 24px;
-    color: var(--text-muted);
-    text-align: right;
-}
-
-/* Artist/Album Mode */
-.artist-mode {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.artist-center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 60px;
-}
-
-.artist-image-container {
-    width: 1000px;
-    height: 1000px;
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: 0 40px 100px var(--shadow-color);
-}
-
-.artist-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.artist-info {
-    max-width: 1800px;
-}
-
-.artist-title {
-    font-size: 96px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 20px;
-}
-
-.artist-subtitle {
-    font-size: 48px;
-    color: var(--text-secondary);
-    margin-bottom: 40px;
-}
-
-.artist-review {
-    background: var(--bg-card);
-    border-radius: 20px;
-    padding: 48px 64px;
-    backdrop-filter: blur(20px);
-}
-
-.artist-review-text {
-    font-size: 36px;
-    color: var(--text-secondary);
-    line-height: 1.8;
-    font-family: 'KaiTi', 'STKaiti', serif;
 }
 
 /* Scale Indicator */
@@ -695,6 +595,7 @@ body {
     padding: 8px 16px;
     border-radius: 6px;
     font-size: 14px;
+    z-index: 100;
 }
 
 /* Hidden class */
@@ -723,17 +624,10 @@ body {
 }
 
 /* ============================================
-   Responsive Adjustments for Preview Scale
+   Responsive Adjustments
    ============================================ */
 @media (max-width: 1600px) {
     :root {
         --sidebar-width: 320px;
     }
-}
-
-/* ============================================
-   Export Specific Styles (Applied during export)
-   ============================================ */
-.exporting .preview-container {
-    transform: none !important;
 }
