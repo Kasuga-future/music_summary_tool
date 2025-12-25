@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>音乐总结 - Music Summary</title>
     <link rel="stylesheet" href="style.css">
-    <!-- html2canvas for screenshot -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- dom-to-image-more for screenshot with better CSS support -->
+    <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.5/dist/dom-to-image-more.min.js"></script>
     <!-- color-thief for extracting colors from album cover -->
     <script src="https://cdn.jsdelivr.net/npm/colorthief@2.4.0/dist/color-thief.umd.js"></script>
     <!-- jsmediatags for ID3 parsing -->
@@ -23,339 +23,404 @@
                 <p class="subtitle">年度音乐评选工具</p>
             </div>
 
-            <div class="sidebar-content">
+            <div class="sidebar-content" id="sidebarContent">
                 <!-- Theme Selection -->
-                <section class="config-section">
-                    <h2 class="section-title">主题设置</h2>
-                    <div class="theme-buttons">
-                        <button class="theme-btn active" data-theme="dark">深色主题</button>
-                        <button class="theme-btn" data-theme="light">浅色主题</button>
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>主题设置</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="theme-buttons">
+                            <button class="theme-btn active" data-theme="dark">深色主题</button>
+                            <button class="theme-btn" data-theme="light">浅色主题</button>
+                        </div>
                     </div>
                 </section>
 
                 <!-- File Upload -->
-                <section class="config-section">
-                    <h2 class="section-title">文件上传</h2>
-                    <div class="upload-group">
-                        <label class="upload-btn">
-                            <span>上传音频文件</span>
-                            <input type="file" id="audioInput" accept=".mp3,.wav,.flac,.ogg,.m4a" hidden>
-                        </label>
-                        <span id="audioFileName" class="file-name">未选择文件</span>
-                    </div>
-                    <div class="upload-group">
-                        <label class="upload-btn">
-                            <span>上传封面图片</span>
-                            <input type="file" id="coverInput" accept="image/*" hidden>
-                        </label>
-                        <span id="coverFileName" class="file-name">未选择文件</span>
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>文件上传</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="upload-group">
+                            <label class="upload-btn">
+                                <span>上传音频文件</span>
+                                <input type="file" id="audioInput" accept=".mp3,.wav,.flac,.ogg,.m4a" hidden>
+                            </label>
+                            <span id="audioFileName" class="file-name">未选择文件</span>
+                        </div>
+                        <div class="upload-group">
+                            <label class="upload-btn">
+                                <span>上传封面图片</span>
+                                <input type="file" id="coverInput" accept="image/*" hidden>
+                            </label>
+                            <span id="coverFileName" class="file-name">未选择文件</span>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Track Information -->
-                <section class="config-section">
-                    <h2 class="section-title">歌曲信息</h2>
-                    <div class="input-group">
-                        <label for="trackTitle">歌曲名称</label>
-                        <input type="text" id="trackTitle" placeholder="输入歌曲名称">
-                    </div>
-                    <div class="input-group">
-                        <label for="artistName">歌手/艺术家</label>
-                        <input type="text" id="artistName" placeholder="输入歌手名称">
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>歌曲信息</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="input-group">
+                            <label for="trackTitle">歌曲名称</label>
+                            <input type="text" id="trackTitle" placeholder="输入歌曲名称">
+                        </div>
+                        <div class="input-group">
+                            <label for="artistName">歌手/艺术家</label>
+                            <input type="text" id="artistName" placeholder="输入歌手名称">
+                        </div>
                     </div>
                 </section>
 
                 <!-- Lyrics Input -->
-                <section class="config-section">
-                    <h2 class="section-title">歌词设置</h2>
-                    <div class="input-group">
-                        <label for="lyricsInput">歌词内容 (LRC格式)</label>
-                        <textarea id="lyricsInput" rows="6"
-                            placeholder="[00:00.00]歌词第一行&#10;[00:05.00]歌词第二行&#10;支持时间戳和翻译"></textarea>
-                    </div>
-                    <div class="checkbox-group">
-                        <label>
-                            <input type="checkbox" id="showLyrics" checked>
-                            显示歌词
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showTranslation" checked>
-                            显示翻译
-                        </label>
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>歌词设置</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="input-group">
+                            <label for="lyricsInput">歌词内容 (LRC格式)</label>
+                            <textarea id="lyricsInput" rows="6"
+                                placeholder="[00:00.00]歌词第一行&#10;[00:05.00]歌词第二行&#10;支持时间戳和翻译"></textarea>
+                        </div>
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="showLyrics" checked>
+                                显示歌词
+                            </label>
+                            <label>
+                                <input type="checkbox" id="showTranslation" checked>
+                                显示翻译
+                            </label>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Progress Control -->
-                <section class="config-section">
-                    <h2 class="section-title">播放进度</h2>
-                    <div class="progress-control">
-                        <input type="range" id="progressSlider" min="0" max="100" value="30">
-                        <div class="time-display">
-                            <span id="currentTime">0:00</span>
-                            <span id="totalTime">3:25</span>
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>播放进度</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="progress-control">
+                            <input type="range" id="progressSlider" min="0" max="100" value="30">
+                            <div class="time-display">
+                                <span id="currentTime">0:00</span>
+                                <span id="totalTime">3:25</span>
+                            </div>
                         </div>
                     </div>
                 </section>
 
                 <!-- Review Section -->
-                <section class="config-section" id="reviewSection">
-                    <h2 class="section-title">个人评价</h2>
-                    <div class="input-group">
-                        <label for="reviewContent">评价内容</label>
-                        <textarea id="reviewContent" rows="4" placeholder="输入您对这首歌的评价..."></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label for="reviewAuthor">水印</label>
-                        <input type="text" id="reviewAuthor" placeholder="kasuga">
-                    </div>
-                    <div class="input-group">
-                        <label for="reviewDate">日期</label>
-                        <input type="text" id="reviewDate" placeholder="2025.12.25">
-                    </div>
-                    <div class="checkbox-group">
-                        <label>
-                            <input type="checkbox" id="showReview" checked>
-                            显示评价区域
-                        </label>
+                <section class="config-section collapsible" id="reviewSection">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>个人评价</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="input-group">
+                            <label for="reviewContent">评价内容</label>
+                            <textarea id="reviewContent" rows="4" placeholder="输入您对这首歌的评价..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="reviewAuthor">水印</label>
+                            <input type="text" id="reviewAuthor" placeholder="kasuga">
+                        </div>
+                        <div class="input-group">
+                            <label for="reviewDate">日期</label>
+                            <input type="text" id="reviewDate" placeholder="2025.12.25">
+                        </div>
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="showReview" checked>
+                                显示评价区域
+                            </label>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Visibility Settings -->
-                <section class="config-section">
-                    <h2 class="section-title">元素显示</h2>
-                    <div class="checkbox-group">
-                        <label>
-                            <input type="checkbox" id="showAlbumArt" checked>
-                            显示封面
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showProgressBar" checked>
-                            显示进度条
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showMetadata" checked>
-                            显示歌曲信息
-                        </label>
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>元素显示</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="showAlbumArt" checked>
+                                显示封面
+                            </label>
+                            <label>
+                                <input type="checkbox" id="showProgressBar" checked>
+                                显示进度条
+                            </label>
+                            <label>
+                                <input type="checkbox" id="showMetadata" checked>
+                                显示歌曲信息
+                            </label>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Style Settings -->
-                <section class="config-section">
-                    <h2 class="section-title">样式调整</h2>
-                    <div class="slider-group">
-                        <label for="coverSize">封面大小: <span id="coverSizeValue">1100</span>px</label>
-                        <input type="range" id="coverSize" min="600" max="1600" value="1200" step="50">
-                    </div>
-                    <div class="slider-group">
-                        <label for="titleArtistGap">标题-歌手间距: <span id="titleArtistGapValue">32</span>px</label>
-                        <input type="range" id="titleArtistGap" min="0" max="80" value="32" step="4">
-                    </div>
-                    <div class="slider-group">
-                        <label for="metadataCoverGap">标题-封面间距: <span id="metadataCoverGapValue">70</span>px</label>
-                        <input type="range" id="metadataCoverGap" min="20" max="150" value="70" step="10">
-                    </div>
-                    <div class="slider-group">
-                        <label for="coverProgressGap">封面-进度条间距: <span id="coverProgressGapValue">150</span>px</label>
-                        <input type="range" id="coverProgressGap" min="20" max="300" value="150" step="10">
-                    </div>
-                    <div class="slider-group">
-                        <label for="titleFontSize">标题字号: <span id="titleFontSizeValue">72</span>px</label>
-                        <input type="range" id="titleFontSize" min="36" max="160" value="72" step="4">
-                    </div>
-                    <div class="slider-group">
-                        <label for="artistFontSize">歌手字号: <span id="artistFontSizeValue">60</span>px</label>
-                        <input type="range" id="artistFontSize" min="24" max="100" value="60" step="2">
-                    </div>
-                    <div class="slider-group">
-                        <label for="lyricsFontSize">原文字号: <span id="lyricsFontSizeValue">72</span>px</label>
-                        <input type="range" id="lyricsFontSize" min="24" max="100" value="72" step="2">
-                    </div>
-                    <div class="slider-group">
-                        <label for="translationFontSize">翻译字号: <span id="translationFontSizeValue">48</span>px</label>
-                        <input type="range" id="translationFontSize" min="16" max="72" value="48" step="2">
-                    </div>
-                    <div class="slider-group">
-                        <label for="reviewFontSize">评价字号: <span id="reviewFontSizeValue">54</span>px</label>
-                        <input type="range" id="reviewFontSize" min="20" max="80" value="54" step="2">
-                    </div>
-                    <div class="slider-group">
-                        <label for="reviewMetaFontSize">水印/日期字号: <span id="reviewMetaFontSizeValue">24</span>px</label>
-                        <input type="range" id="reviewMetaFontSize" min="14" max="40" value="24" step="2">
-                    </div>
-                    <div class="slider-group">
-                        <label for="lyricsLineGap">歌词行间距: <span id="lyricsLineGapValue">40</span>px</label>
-                        <input type="range" id="lyricsLineGap" min="10" max="80" value="40" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="lyricsHeight">歌词区域高度: <span id="lyricsHeightValue">60</span>%</label>
-                        <input type="range" id="lyricsHeight" min="30" max="80" value="60" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="lyricsFade">歌词渐隐程度: <span id="lyricsFadeValue">50</span>%</label>
-                        <input type="range" id="lyricsFade" min="0" max="75" value="50" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="reviewBoxWidth">评价框宽度: <span id="reviewBoxWidthValue">100</span>%</label>
-                        <input type="range" id="reviewBoxWidth" min="60" max="100" value="100" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="reviewBoxHeight">评价框高度: <span id="reviewBoxHeightValue">600</span>px</label>
-                        <input type="range" id="reviewBoxHeight" min="150" max="900" value="600" step="25">
-                    </div>
-                    <div class="slider-group">
-                        <label for="reviewBgOpacity">评价背景透明度: <span id="reviewBgOpacityValue">15</span>%</label>
-                        <input type="range" id="reviewBgOpacity" min="0" max="80" value="15" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="borderRadius">圆角大小: <span id="borderRadiusValue">48</span>px</label>
-                        <input type="range" id="borderRadius" min="0" max="120" value="48" step="4">
-                    </div>
-                    <div class="slider-group">
-                        <label for="progressBarHeight">进度条粗细: <span id="progressBarHeightValue">12</span>px</label>
-                        <input type="range" id="progressBarHeight" min="4" max="24" value="12" step="2">
-                    </div>
-                    <div class="slider-group">
-                        <label for="progressTimeFontSize">进度时间字号: <span
-                                id="progressTimeFontSizeValue">32</span>px</label>
-                        <input type="range" id="progressTimeFontSize" min="16" max="72" value="32" step="2">
-                    </div>
-                    <div class="slider-group">
-                        <label for="blurStrength">背景模糊（深色模式生效）: <span id="blurStrengthValue">90</span>px</label>
-                        <input type="range" id="blurStrength" min="40" max="150" value="90" step="10">
-                    </div>
+                <section class="config-section collapsible collapsed">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>样式调整</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="slider-group">
+                            <label for="coverSize">封面大小: <span id="coverSizeValue">1100</span>px</label>
+                            <input type="range" id="coverSize" min="600" max="1600" value="1200" step="50">
+                        </div>
+                        <div class="slider-group">
+                            <label for="titleArtistGap">标题-歌手间距: <span id="titleArtistGapValue">32</span>px</label>
+                            <input type="range" id="titleArtistGap" min="0" max="80" value="32" step="4">
+                        </div>
+                        <div class="slider-group">
+                            <label for="metadataCoverGap">标题-封面间距: <span id="metadataCoverGapValue">70</span>px</label>
+                            <input type="range" id="metadataCoverGap" min="20" max="150" value="70" step="10">
+                        </div>
+                        <div class="slider-group">
+                            <label for="coverProgressGap">封面-进度条间距: <span
+                                    id="coverProgressGapValue">150</span>px</label>
+                            <input type="range" id="coverProgressGap" min="20" max="300" value="150" step="10">
+                        </div>
+                        <div class="slider-group">
+                            <label for="titleFontSize">标题字号: <span id="titleFontSizeValue">72</span>px</label>
+                            <input type="range" id="titleFontSize" min="36" max="160" value="72" step="4">
+                        </div>
+                        <div class="slider-group">
+                            <label for="artistFontSize">歌手字号: <span id="artistFontSizeValue">60</span>px</label>
+                            <input type="range" id="artistFontSize" min="24" max="100" value="60" step="2">
+                        </div>
+                        <div class="slider-group">
+                            <label for="lyricsFontSize">原文字号: <span id="lyricsFontSizeValue">72</span>px</label>
+                            <input type="range" id="lyricsFontSize" min="24" max="100" value="72" step="2">
+                        </div>
+                        <div class="slider-group">
+                            <label for="translationFontSize">翻译字号: <span
+                                    id="translationFontSizeValue">48</span>px</label>
+                            <input type="range" id="translationFontSize" min="16" max="72" value="48" step="2">
+                        </div>
+                        <div class="slider-group">
+                            <label for="reviewFontSize">评价字号: <span id="reviewFontSizeValue">54</span>px</label>
+                            <input type="range" id="reviewFontSize" min="20" max="80" value="54" step="2">
+                        </div>
+                        <div class="slider-group">
+                            <label for="reviewMetaFontSize">水印/日期字号: <span
+                                    id="reviewMetaFontSizeValue">24</span>px</label>
+                            <input type="range" id="reviewMetaFontSize" min="14" max="40" value="24" step="2">
+                        </div>
+                        <div class="slider-group">
+                            <label for="lyricsLineGap">歌词行间距: <span id="lyricsLineGapValue">40</span>px</label>
+                            <input type="range" id="lyricsLineGap" min="10" max="80" value="40" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="lyricsHeight">歌词区域高度: <span id="lyricsHeightValue">60</span>%</label>
+                            <input type="range" id="lyricsHeight" min="30" max="80" value="60" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="lyricsFade">歌词渐隐程度: <span id="lyricsFadeValue">50</span>%</label>
+                            <input type="range" id="lyricsFade" min="0" max="75" value="50" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="reviewBoxWidth">评价框宽度: <span id="reviewBoxWidthValue">100</span>%</label>
+                            <input type="range" id="reviewBoxWidth" min="60" max="100" value="100" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="reviewBoxHeight">评价框高度: <span id="reviewBoxHeightValue">600</span>px</label>
+                            <input type="range" id="reviewBoxHeight" min="150" max="900" value="600" step="25">
+                        </div>
+                        <div class="slider-group">
+                            <label for="reviewBgOpacity">评价背景透明度: <span id="reviewBgOpacityValue">15</span>%</label>
+                            <input type="range" id="reviewBgOpacity" min="0" max="80" value="15" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="borderRadius">圆角大小: <span id="borderRadiusValue">48</span>px</label>
+                            <input type="range" id="borderRadius" min="0" max="120" value="48" step="4">
+                        </div>
+                        <div class="slider-group">
+                            <label for="progressBarHeight">进度条粗细: <span id="progressBarHeightValue">12</span>px</label>
+                            <input type="range" id="progressBarHeight" min="4" max="24" value="12" step="2">
+                        </div>
+                        <div class="slider-group">
+                            <label for="progressTimeFontSize">进度时间字号: <span
+                                    id="progressTimeFontSizeValue">32</span>px</label>
+                            <input type="range" id="progressTimeFontSize" min="16" max="72" value="32" step="2">
+                        </div>
+                        <div class="slider-group">
+                            <label for="blurStrength">背景模糊（深色模式生效）: <span id="blurStrengthValue">90</span>px</label>
+                            <input type="range" id="blurStrength" min="40" max="150" value="90" step="10">
+                        </div>
 
-                    <h3 class="subsection-title">文字灰度(0黑-255白)</h3>
-                    <div class="slider-group">
-                        <label for="titleGray">标题灰度: <span id="titleGrayValue">255</span></label>
-                        <input type="range" id="titleGray" min="0" max="255" value="255" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="artistGray">歌手灰度: <span id="artistGrayValue">180</span></label>
-                        <input type="range" id="artistGray" min="0" max="255" value="180" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="lyricsGray">歌词灰度: <span id="lyricsGrayValue">255</span></label>
-                        <input type="range" id="lyricsGray" min="0" max="255" value="255" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="translationGray">翻译灰度: <span id="translationGrayValue">180</span></label>
-                        <input type="range" id="translationGray" min="0" max="255" value="180" step="5">
-                    </div>
-                    <div class="slider-group">
-                        <label for="reviewGray">评价灰度: <span id="reviewGrayValue">220</span></label>
-                        <input type="range" id="reviewGray" min="0" max="255" value="220" step="5">
+                        <h3 class="subsection-title">文字灰度(0黑-255白)</h3>
+                        <div class="slider-group">
+                            <label for="titleGray">标题灰度: <span id="titleGrayValue">255</span></label>
+                            <input type="range" id="titleGray" min="0" max="255" value="255" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="artistGray">歌手灰度: <span id="artistGrayValue">180</span></label>
+                            <input type="range" id="artistGray" min="0" max="255" value="180" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="lyricsGray">歌词灰度: <span id="lyricsGrayValue">255</span></label>
+                            <input type="range" id="lyricsGray" min="0" max="255" value="255" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="translationGray">翻译灰度: <span id="translationGrayValue">180</span></label>
+                            <input type="range" id="translationGray" min="0" max="255" value="180" step="5">
+                        </div>
+                        <div class="slider-group">
+                            <label for="reviewGray">评价灰度: <span id="reviewGrayValue">220</span></label>
+                            <input type="range" id="reviewGray" min="0" max="255" value="220" step="5">
+                        </div>
                     </div>
                 </section>
 
                 <!-- Layout Settings (Edit Mode) -->
-                <section class="config-section">
-                    <h2 class="section-title">布局编辑</h2>
-                    <div class="checkbox-group" style="margin-bottom: 12px;">
-                        <label>
-                            <input type="checkbox" id="editModeToggle">
-                            启用编辑模式 (显示控件边框)
-                        </label>
-                    </div>
-                    <div class="input-group">
-                        <label>标题/歌手对齐</label>
-                        <select id="metadataAlign" class="font-select">
-                            <option value="center">居中</option>
-                            <option value="left">靠左(与封面对齐)</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>歌词对齐</label>
-                        <select id="lyricsAlign" class="font-select">
-                            <option value="left">靠左</option>
-                            <option value="center">居中</option>
-                        </select>
-                    </div>
+                <section class="config-section collapsible collapsed">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>布局编辑</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="checkbox-group" style="margin-bottom: 12px;">
+                            <label>
+                                <input type="checkbox" id="editModeToggle">
+                                启用编辑模式 (显示控件边框)
+                            </label>
+                        </div>
+                        <div class="input-group">
+                            <label>标题/歌手对齐</label>
+                            <select id="metadataAlign" class="font-select">
+                                <option value="center">居中</option>
+                                <option value="left">靠左(与封面对齐)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>歌词对齐</label>
+                            <select id="lyricsAlign" class="font-select">
+                                <option value="left">靠左</option>
+                                <option value="center">居中</option>
+                            </select>
+                        </div>
 
-                    <h3 class="subsection-title">标题/歌手位置</h3>
-                    <div class="slider-group">
-                        <label for="metadataX">X: <span id="metadataXValue">0</span>px</label>
-                        <input type="range" id="metadataX" min="-500" max="500" value="0" step="10">
-                    </div>
-                    <div class="slider-group">
-                        <label for="metadataY">Y: <span id="metadataYValue">90</span>px</label>
-                        <input type="range" id="metadataY" min="-500" max="500" value="90" step="10">
-                    </div>
+                        <h3 class="subsection-title">标题/歌手位置</h3>
+                        <div class="slider-group">
+                            <label for="metadataX">X: <span id="metadataXValue">0</span>px</label>
+                            <input type="range" id="metadataX" min="-500" max="500" value="0" step="10">
+                        </div>
+                        <div class="slider-group">
+                            <label for="metadataY">Y: <span id="metadataYValue">90</span>px</label>
+                            <input type="range" id="metadataY" min="-500" max="500" value="90" step="10">
+                        </div>
 
-                    <h3 class="subsection-title">封面位置</h3>
-                    <div class="slider-group">
-                        <label for="coverX">X: <span id="coverXValue">0</span>px</label>
-                        <input type="range" id="coverX" min="-500" max="500" value="0" step="10">
-                    </div>
-                    <div class="slider-group">
-                        <label for="coverY">Y: <span id="coverYValue">130</span>px</label>
-                        <input type="range" id="coverY" min="-500" max="500" value="130" step="10">
-                    </div>
+                        <h3 class="subsection-title">封面位置</h3>
+                        <div class="slider-group">
+                            <label for="coverX">X: <span id="coverXValue">0</span>px</label>
+                            <input type="range" id="coverX" min="-500" max="500" value="0" step="10">
+                        </div>
+                        <div class="slider-group">
+                            <label for="coverY">Y: <span id="coverYValue">130</span>px</label>
+                            <input type="range" id="coverY" min="-500" max="500" value="130" step="10">
+                        </div>
 
-                    <h3 class="subsection-title">进度条位置</h3>
-                    <div class="slider-group">
-                        <label for="progressX">X: <span id="progressXValue">0</span>px</label>
-                        <input type="range" id="progressX" min="-500" max="500" value="0" step="10">
-                    </div>
-                    <div class="slider-group">
-                        <label for="progressY">Y: <span id="progressYValue">130</span>px</label>
-                        <input type="range" id="progressY" min="-500" max="500" value="130" step="10">
-                    </div>
+                        <h3 class="subsection-title">进度条位置</h3>
+                        <div class="slider-group">
+                            <label for="progressX">X: <span id="progressXValue">0</span>px</label>
+                            <input type="range" id="progressX" min="-500" max="500" value="0" step="10">
+                        </div>
+                        <div class="slider-group">
+                            <label for="progressY">Y: <span id="progressYValue">130</span>px</label>
+                            <input type="range" id="progressY" min="-500" max="500" value="130" step="10">
+                        </div>
 
-                    <h3 class="subsection-title">歌词位置</h3>
-                    <div class="slider-group">
-                        <label for="lyricsX">X: <span id="lyricsXValue">0</span>px</label>
-                        <input type="range" id="lyricsX" min="-500" max="500" value="0" step="10">
-                    </div>
-                    <div class="slider-group">
-                        <label for="lyricsY">Y: <span id="lyricsYValue">10</span>px</label>
-                        <input type="range" id="lyricsY" min="-500" max="500" value="10" step="10">
-                    </div>
+                        <h3 class="subsection-title">歌词位置</h3>
+                        <div class="slider-group">
+                            <label for="lyricsX">X: <span id="lyricsXValue">0</span>px</label>
+                            <input type="range" id="lyricsX" min="-500" max="500" value="0" step="10">
+                        </div>
+                        <div class="slider-group">
+                            <label for="lyricsY">Y: <span id="lyricsYValue">10</span>px</label>
+                            <input type="range" id="lyricsY" min="-500" max="500" value="10" step="10">
+                        </div>
 
-                    <h3 class="subsection-title">评价位置</h3>
-                    <div class="slider-group">
-                        <label for="reviewX">X: <span id="reviewXValue">0</span>px</label>
-                        <input type="range" id="reviewX" min="-500" max="500" value="0" step="10">
-                    </div>
-                    <div class="slider-group">
-                        <label for="reviewY">Y: <span id="reviewYValue">-30</span>px</label>
-                        <input type="range" id="reviewY" min="-500" max="500" value="-30" step="10">
+                        <h3 class="subsection-title">评价位置</h3>
+                        <div class="slider-group">
+                            <label for="reviewX">X: <span id="reviewXValue">0</span>px</label>
+                            <input type="range" id="reviewX" min="-500" max="500" value="0" step="10">
+                        </div>
+                        <div class="slider-group">
+                            <label for="reviewY">Y: <span id="reviewYValue">-30</span>px</label>
+                            <input type="range" id="reviewY" min="-500" max="500" value="-30" step="10">
+                        </div>
                     </div>
                 </section>
 
                 <!-- Font Settings -->
-                <section class="config-section">
-                    <h2 class="section-title">字体设置</h2>
-                    <div class="input-group">
-                        <label for="titleFont">标题字体</label>
-                        <select id="titleFont" class="font-select"></select>
-                    </div>
-                    <div class="input-group">
-                        <label for="artistFont">歌手字体</label>
-                        <select id="artistFont" class="font-select"></select>
-                    </div>
-                    <div class="input-group">
-                        <label for="lyricsFont">歌词字体</label>
-                        <select id="lyricsFont" class="font-select"></select>
-                    </div>
-                    <div class="input-group">
-                        <label for="translationFont">翻译字体</label>
-                        <select id="translationFont" class="font-select"></select>
-                    </div>
-                    <div class="input-group">
-                        <label for="reviewFont">评价字体</label>
-                        <select id="reviewFont" class="font-select"></select>
+                <section class="config-section collapsible collapsed">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>字体设置</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="input-group">
+                            <label for="titleFont">标题字体</label>
+                            <select id="titleFont" class="font-select"></select>
+                        </div>
+                        <div class="input-group">
+                            <label for="artistFont">歌手字体</label>
+                            <select id="artistFont" class="font-select"></select>
+                        </div>
+                        <div class="input-group">
+                            <label for="lyricsFont">歌词字体</label>
+                            <select id="lyricsFont" class="font-select"></select>
+                        </div>
+                        <div class="input-group">
+                            <label for="translationFont">翻译字体</label>
+                            <select id="translationFont" class="font-select"></select>
+                        </div>
+                        <div class="input-group">
+                            <label for="reviewFont">评价字体</label>
+                            <select id="reviewFont" class="font-select"></select>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Output Settings -->
-                <section class="config-section">
-                    <h2 class="section-title">输出设置</h2>
-                    <div class="resolution-info">
-                        <span>输出分辨率: 3840 x 2160 </span>
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>输出设置</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="resolution-info">
+                            <span>输出分辨率: 3840 x 2160 </span>
+                        </div>
+                        <button class="export-btn" id="exportBtn">导出截图 (PNG)</button>
+                        <button class="export-btn clipboard-btn" id="copyBtn">复制到剪贴板</button>
+                        <button class="refresh-btn" id="refreshBgBtn">刷新背景（浅色模式生效）</button>
                     </div>
-                    <button class="export-btn" id="exportBtn">导出截图 (PNG)</button>
-                    <button class="refresh-btn" id="refreshBgBtn">刷新背景（浅色模式生效）</button>
                 </section>
+            </div>
+
+            <!-- Scroll Navigation Buttons -->
+            <div class="scroll-nav">
+                <button class="scroll-btn" id="scrollTopBtn" title="回到顶部">▲</button>
+                <button class="scroll-btn" id="scrollBottomBtn" title="回到底部">▼</button>
             </div>
         </aside>
 

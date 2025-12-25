@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStyles();
     updateElementPositions();
     updateAlignment();
+    initializeScrollNav();
     
     window.addEventListener('resize', updatePreviewScale);
 });
@@ -388,6 +389,7 @@ function initializeEventListeners() {
     
     // Export and refresh buttons
     elements.exportBtn.addEventListener('click', exportScreenshot);
+    document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
     elements.refreshBgBtn.addEventListener('click', () => {
         if (currentTheme === 'light') {
             // Use album colors if available, otherwise random
@@ -967,6 +969,8 @@ function updateStyles() {
     // Apply border radius
     const borderRadius = elements.borderRadius.value + 'px';
     elements.albumArtContainer.style.borderRadius = borderRadius;
+    // Also apply to the image itself for html2canvas compatibility
+    elements.albumArt.style.borderRadius = borderRadius;
     
     // Apply progress bar height
     const progressBarHeight = elements.progressBarHeight.value + 'px';
@@ -1355,194 +1359,34 @@ function refreshInkColors() {
 // Export Screenshot
 // ============================================
 
-// Helper function to draw rounded rectangle path
-function roundedRectPath(ctx, x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.arcTo(x + width, y, x + width, y + radius, radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
-    ctx.lineTo(x + radius, y + height);
-    ctx.arcTo(x, y + height, x, y + height - radius, radius);
-    ctx.lineTo(x, y + radius);
-    ctx.arcTo(x, y, x + radius, y, radius);
-    ctx.closePath();
-}
-
 async function exportScreenshot() {
     const btn = elements.exportBtn;
     const originalText = btn.textContent;
     btn.textContent = '正在生成...';
     btn.disabled = true;
     
+    const container = elements.previewContainer;
+    const originalTransform = container.style.transform;
+    
     try {
-        const container = elements.previewContainer;
-        const albumContainer = elements.albumArtContainer;
-        const albumImg = elements.albumArt;
-        const reviewPanel = elements.reviewPanel;
-        
-        // Store original styles
-        const originalTransform = container.style.transform;
-        
-        // Remove transform for accurate capture
+        // Remove transform for 100% scale capture
         container.style.transform = 'none';
         
         // Wait for layout to settle
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        // Get positions after transform removal
-        const containerRect = container.getBoundingClientRect();
-        const albumRect = albumContainer.getBoundingClientRect();
-        const reviewRect = reviewPanel.getBoundingClientRect();
-        
-        // Calculate positions in 4K coordinates
-        const scaleX = 3840 / containerRect.width;
-        const scaleY = 2160 / containerRect.height;
-        
-        const albumX = (albumRect.left - containerRect.left) * scaleX;
-        const albumY = (albumRect.top - containerRect.top) * scaleY;
-        const albumWidth = parseInt(elements.coverSize.value);
-        const albumHeight = albumWidth;
-        const borderRadius = parseInt(elements.borderRadius.value);
-        
-        const reviewX = (reviewRect.left - containerRect.left) * scaleX;
-        const reviewY = (reviewRect.top - containerRect.top) * scaleY;
-        const reviewWidth = reviewRect.width * scaleX;
-        const reviewHeight = reviewRect.height * scaleY;
-        
-        // Create final canvas
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = 3840;
-        finalCanvas.height = 2160;
-        const ctx = finalCanvas.getContext('2d');
-        
-        // ========== Step 1: Draw Background ==========
-        if (currentTheme === 'dark') {
-            // Dark theme: first fill with base color
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(0, 0, 3840, 2160);
-            
-            // Draw blurred album cover if available
-            if (currentCoverUrl && albumImg.complete && albumImg.naturalWidth > 0) {
-                const blurRadius = parseInt(elements.blurStrength.value);
-                
-                // Create a temporary canvas for the blurred background
-                const bgCanvas = document.createElement('canvas');
-                bgCanvas.width = 4416; // 3840 * 1.15
-                bgCanvas.height = 2484; // 2160 * 1.15
-                const bgCtx = bgCanvas.getContext('2d');
-                
-                // Fill with dark color first
-                bgCtx.fillStyle = '#0a0a0a';
-                bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
-                
-                // Calculate cover dimensions to fill and overflow
-                const imgRatio = albumImg.naturalWidth / albumImg.naturalHeight;
-                const canvasRatio = bgCanvas.width / bgCanvas.height;
-                let drawW, drawH, drawX, drawY;
-                
-                if (imgRatio > canvasRatio) {
-                    drawH = bgCanvas.height;
-                    drawW = drawH * imgRatio;
-                } else {
-                    drawW = bgCanvas.width;
-                    drawH = drawW / imgRatio;
-                }
-                drawX = (bgCanvas.width - drawW) / 2;
-                drawY = (bgCanvas.height - drawH) / 2;
-                
-                // Draw image with blur
-                bgCtx.filter = `blur(${blurRadius}px)`;
-                bgCtx.drawImage(albumImg, drawX, drawY, drawW, drawH);
-                bgCtx.filter = 'none';
-                
-                // Draw blurred background centered with opacity
-                ctx.globalAlpha = 0.7;
-                ctx.drawImage(bgCanvas, -288, -162, 4416, 2484); // Offset to center
-                ctx.globalAlpha = 1.0;
-                
-                // Dark overlay
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-                ctx.fillRect(0, 0, 3840, 2160);
-            }
-        } else {
-            // Light theme: simple background color
-            ctx.fillStyle = '#F8F6F0';
-            ctx.fillRect(0, 0, 3840, 2160);
-        }
-        
-        // ========== Step 2: Capture content with html2canvas ==========
-        const contentCanvas = await html2canvas(container, {
+        // Use dom-to-image-more for better CSS support
+        const dataUrl = await domtoimage.toPng(container, {
             width: 3840,
             height: 2160,
-            scale: 1,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null,
-            logging: false,
-            windowWidth: 3840,
-            windowHeight: 2160,
-            onclone: function(clonedDoc) {
-                const clonedAlbum = clonedDoc.getElementById('albumArtContainer');
-                const clonedReview = clonedDoc.getElementById('reviewPanel');
-                const clonedDynamicBg = clonedDoc.getElementById('dynamicBg');
-                const clonedOverlay = clonedDoc.getElementById('overlayLayer');
-                const clonedBgLayer = clonedDoc.getElementById('bgLayer');
-                
-                // For dark theme, hide dynamic backgrounds (we draw them manually)
-                if (currentTheme === 'dark') {
-                    if (clonedDynamicBg) clonedDynamicBg.style.opacity = '0';
-                    if (clonedOverlay) clonedOverlay.style.background = 'transparent';
-                    if (clonedBgLayer) clonedBgLayer.style.background = 'transparent';
-                }
-                // Light theme: keep bgLayer as-is for ink background
-                
-                // Hide album (we'll draw it with proper rounding)
-                if (clonedAlbum) {
-                    clonedAlbum.style.visibility = 'hidden';
-                }
-                
-                // Hide review panel shadow (we draw it manually)
-                if (clonedReview) {
-                    clonedReview.style.boxShadow = 'none';
-                }
+            style: {
+                transform: 'none'
+            },
+            filter: (node) => {
+                // Include all nodes
+                return true;
             }
         });
-        
-        // ========== Step 3: Draw album shadow ==========
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-        ctx.shadowBlur = 100;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 50;
-        ctx.fillStyle = '#000000';
-        roundedRectPath(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
-        ctx.fill();
-        ctx.restore();
-        
-        // ========== Step 4: Draw review panel shadow ==========
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-        ctx.shadowBlur = 50;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 20;
-        ctx.fillStyle = currentTheme === 'dark' ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.65)';
-        roundedRectPath(ctx, reviewX, reviewY, reviewWidth, reviewHeight, 16);
-        ctx.fill();
-        ctx.restore();
-        
-        // ========== Step 5: Draw html2canvas content ==========
-        ctx.drawImage(contentCanvas, 0, 0);
-        
-        // ========== Step 6: Draw album cover with perfect rounded corners ==========
-        if (albumImg.complete && albumImg.src && albumImg.naturalWidth > 0) {
-            ctx.save();
-            roundedRectPath(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
-            ctx.clip();
-            ctx.drawImage(albumImg, albumX, albumY, albumWidth, albumHeight);
-            ctx.restore();
-        }
         
         // Restore original transform
         container.style.transform = originalTransform;
@@ -1552,7 +1396,7 @@ async function exportScreenshot() {
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
         const title = elements.trackTitle.value || 'music_summary';
         link.download = `${title}_${timestamp}.png`;
-        link.href = finalCanvas.toDataURL('image/png', 1.0);
+        link.href = dataUrl;
         link.click();
         
         btn.textContent = '导出成功!';
@@ -1563,11 +1407,100 @@ async function exportScreenshot() {
         
     } catch (error) {
         console.error('Export failed:', error);
+        // Always restore transform even on error
+        container.style.transform = originalTransform;
         btn.textContent = '导出失败';
         setTimeout(() => {
             btn.textContent = originalText;
             btn.disabled = false;
         }, 2000);
+    }
+}
+
+// ============================================
+// Copy to Clipboard
+// ============================================
+async function copyToClipboard() {
+    const btn = document.getElementById('copyBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '正在复制...';
+    btn.disabled = true;
+    
+    const container = elements.previewContainer;
+    const originalTransform = container.style.transform;
+    
+    try {
+        // Remove transform for 100% scale capture
+        container.style.transform = 'none';
+        
+        // Wait for layout to settle
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Use dom-to-image-more to get blob
+        const blob = await domtoimage.toBlob(container, {
+            width: 3840,
+            height: 2160,
+            style: {
+                transform: 'none'
+            }
+        });
+        
+        // Restore original transform
+        container.style.transform = originalTransform;
+        
+        // Copy to clipboard
+        await navigator.clipboard.write([
+            new ClipboardItem({
+                'image/png': blob
+            })
+        ]);
+        
+        btn.textContent = '已复制!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Copy failed:', error);
+        // Always restore transform even on error
+        container.style.transform = originalTransform;
+        btn.textContent = '复制失败';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 2000);
+    }
+}
+
+// ============================================
+// Section Toggle (Collapsible)
+// ============================================
+function toggleSection(titleElement) {
+    const section = titleElement.closest('.config-section');
+    if (section) {
+        section.classList.toggle('collapsed');
+    }
+}
+
+// ============================================
+// Scroll Navigation
+// ============================================
+function initializeScrollNav() {
+    const sidebarContent = document.getElementById('sidebarContent');
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
+    const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+    
+    if (scrollTopBtn) {
+        scrollTopBtn.addEventListener('click', () => {
+            sidebarContent.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+    
+    if (scrollBottomBtn) {
+        scrollBottomBtn.addEventListener('click', () => {
+            sidebarContent.scrollTo({ top: sidebarContent.scrollHeight, behavior: 'smooth' });
+        });
     }
 }
 
