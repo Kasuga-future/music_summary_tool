@@ -109,6 +109,10 @@ function initializeElements() {
     elements.reviewBoxHeightValue = document.getElementById('reviewBoxHeightValue');
     elements.reviewBgOpacityValue = document.getElementById('reviewBgOpacityValue');
     elements.borderRadiusValue = document.getElementById('borderRadiusValue');
+    elements.progressBarHeight = document.getElementById('progressBarHeight');
+    elements.progressBarHeightValue = document.getElementById('progressBarHeightValue');
+    elements.progressTimeFontSize = document.getElementById('progressTimeFontSize');
+    elements.progressTimeFontSizeValue = document.getElementById('progressTimeFontSizeValue');
     elements.blurStrengthValue = document.getElementById('blurStrengthValue');
     elements.titleGrayValue = document.getElementById('titleGrayValue');
     elements.artistGrayValue = document.getElementById('artistGrayValue');
@@ -410,11 +414,23 @@ function setTheme(theme) {
         } else {
             renderInkBackground();
         }
+        // Set light theme gray values: 标题50、歌手90、歌词10、翻译90、评价50
+        elements.titleGray.value = 50;
+        elements.artistGray.value = 90;
+        elements.lyricsGray.value = 10;
+        elements.translationGray.value = 90;
+        elements.reviewGray.value = 50;
     } else {
         // Dark theme uses dynamic blur
         if (currentCoverUrl) {
             elements.dynamicBg.style.backgroundImage = `url(${currentCoverUrl})`;
         }
+        // Set dark theme gray values (bright text)
+        elements.titleGray.value = 255;
+        elements.artistGray.value = 180;
+        elements.lyricsGray.value = 255;
+        elements.translationGray.value = 180;
+        elements.reviewGray.value = 220;
     }
     
     // Update review panel background opacity for theme
@@ -843,6 +859,8 @@ function updateStyles() {
     elements.reviewBoxHeightValue.textContent = elements.reviewBoxHeight.value;
     elements.reviewBgOpacityValue.textContent = elements.reviewBgOpacity.value;
     elements.borderRadiusValue.textContent = elements.borderRadius.value;
+    elements.progressBarHeightValue.textContent = elements.progressBarHeight.value;
+    elements.progressTimeFontSizeValue.textContent = elements.progressTimeFontSize.value;
     elements.blurStrengthValue.textContent = elements.blurStrength.value;
     elements.titleGrayValue.textContent = elements.titleGray.value;
     elements.artistGrayValue.textContent = elements.artistGray.value;
@@ -921,6 +939,17 @@ function updateStyles() {
     // Apply border radius
     const borderRadius = elements.borderRadius.value + 'px';
     elements.albumArtContainer.style.borderRadius = borderRadius;
+    
+    // Apply progress bar height
+    const progressBarHeight = elements.progressBarHeight.value + 'px';
+    document.querySelector('.progress-bar-bg').style.height = progressBarHeight;
+    document.querySelector('.progress-bar-fill').style.height = progressBarHeight;
+    document.querySelector('.progress-bar-bg').style.borderRadius = (parseInt(elements.progressBarHeight.value) / 2) + 'px';
+    document.querySelector('.progress-bar-fill').style.borderRadius = (parseInt(elements.progressBarHeight.value) / 2) + 'px';
+    
+    // Apply progress time font size
+    const progressTimeFontSize = elements.progressTimeFontSize.value + 'px';
+    document.querySelector('.progress-time').style.fontSize = progressTimeFontSize;
     
     // Apply blur strength
     const blurStrength = elements.blurStrength.value + 'px';
@@ -1297,6 +1326,53 @@ function refreshInkColors() {
 // ============================================
 // Export Screenshot
 // ============================================
+
+// Helper function to draw rounded rectangle
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+}
+
+// Helper function to apply blur to an image using StackBlur algorithm (simplified)
+function createBlurredImage(img, blurRadius) {
+    const tempCanvas = document.createElement('canvas');
+    const scale = 1.15;
+    tempCanvas.width = 3840 * scale;
+    tempCanvas.height = 2160 * scale;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // Draw scaled image
+    const imgRatio = img.width / img.height;
+    const canvasRatio = tempCanvas.width / tempCanvas.height;
+    let drawWidth, drawHeight, drawX, drawY;
+    
+    if (imgRatio > canvasRatio) {
+        drawHeight = tempCanvas.height;
+        drawWidth = drawHeight * imgRatio;
+        drawX = (tempCanvas.width - drawWidth) / 2;
+        drawY = 0;
+    } else {
+        drawWidth = tempCanvas.width;
+        drawHeight = drawWidth / imgRatio;
+        drawX = 0;
+        drawY = (tempCanvas.height - drawHeight) / 2;
+    }
+    
+    tempCtx.filter = `blur(${blurRadius}px)`;
+    tempCtx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+    
+    return tempCanvas;
+}
+
 async function exportScreenshot() {
     const btn = elements.exportBtn;
     const originalText = btn.textContent;
@@ -1304,22 +1380,86 @@ async function exportScreenshot() {
     btn.disabled = true;
     
     try {
-        // Store original transform and remove for capture
         const container = elements.previewContainer;
-        const originalTransform = container.style.transform;
-        container.style.transform = 'none';
-        
-        // Temporarily remove box-shadow and add it as a filter for better html2canvas support
         const albumContainer = elements.albumArtContainer;
-        const originalBoxShadow = albumContainer.style.boxShadow || getComputedStyle(albumContainer).boxShadow;
+        const albumImg = elements.albumArt;
+        const reviewPanel = elements.reviewPanel;
+        
+        // Get current positions and sizes
+        const containerRect = container.getBoundingClientRect();
+        const albumRect = albumContainer.getBoundingClientRect();
+        const reviewRect = reviewPanel.getBoundingClientRect();
+        
+        // Calculate scale factor from preview to 4K
+        const currentScale = parseFloat(container.style.transform.replace('scale(', '').replace(')', '')) || 1;
+        const scaleX = 3840 / containerRect.width * currentScale;
+        const scaleY = 2160 / containerRect.height * currentScale;
+        
+        // Store original styles
+        const originalTransform = container.style.transform;
+        const originalAlbumBoxShadow = getComputedStyle(albumContainer).boxShadow;
+        const originalReviewBoxShadow = getComputedStyle(reviewPanel).boxShadow;
+        
+        // Prepare for capture - remove transform and shadows (we'll add them manually)
+        container.style.transform = 'none';
         albumContainer.style.boxShadow = 'none';
-        albumContainer.style.filter = 'drop-shadow(0 40px 80px rgba(0, 0, 0, 0.25))';
+        reviewPanel.style.boxShadow = 'none';
         
         // Wait for styles to apply
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        // Capture with html2canvas at exact 3840x2160
-        const canvas = await html2canvas(container, {
+        // Create the final canvas
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = 3840;
+        finalCanvas.height = 2160;
+        const ctx = finalCanvas.getContext('2d');
+        
+        // Get album position after transform removal
+        const newContainerRect = container.getBoundingClientRect();
+        const newAlbumRect = albumContainer.getBoundingClientRect();
+        const newReviewRect = reviewPanel.getBoundingClientRect();
+        
+        // Calculate album position in 4K coordinates
+        const albumX = (newAlbumRect.left - newContainerRect.left) / newContainerRect.width * 3840;
+        const albumY = (newAlbumRect.top - newContainerRect.top) / newContainerRect.height * 2160;
+        const albumWidth = parseInt(elements.coverSize.value);
+        const albumHeight = albumWidth;
+        const borderRadius = parseInt(elements.borderRadius.value);
+        
+        // Calculate review position in 4K coordinates
+        const reviewX = (newReviewRect.left - newContainerRect.left) / newContainerRect.width * 3840;
+        const reviewY = (newReviewRect.top - newContainerRect.top) / newContainerRect.height * 2160;
+        const reviewWidth = newReviewRect.width / newContainerRect.width * 3840;
+        const reviewHeight = newReviewRect.height / newContainerRect.height * 2160;
+        
+        // Step 1: Draw background
+        if (currentTheme === 'dark') {
+            // Dark theme: draw solid color first
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, 3840, 2160);
+            
+            // Draw blurred album cover as background
+            if (currentCoverUrl && albumImg.complete) {
+                const blurRadius = parseInt(elements.blurStrength.value);
+                const blurredCanvas = createBlurredImage(albumImg, blurRadius);
+                
+                // Draw blurred image with opacity
+                ctx.globalAlpha = 0.7;
+                ctx.drawImage(blurredCanvas, -3840 * 0.075, -2160 * 0.075, 3840 * 1.15, 2160 * 1.15);
+                ctx.globalAlpha = 1.0;
+                
+                // Draw overlay
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillRect(0, 0, 3840, 2160);
+            }
+        } else {
+            // Light theme: capture the ink background
+            ctx.fillStyle = '#F8F6F0';
+            ctx.fillRect(0, 0, 3840, 2160);
+        }
+        
+        // Step 2: Capture the content without shadows using html2canvas
+        const contentCanvas = await html2canvas(container, {
             width: 3840,
             height: 2160,
             scale: 1,
@@ -1329,24 +1469,79 @@ async function exportScreenshot() {
             logging: false,
             windowWidth: 3840,
             windowHeight: 2160,
-            x: 0,
-            y: 0,
-            scrollX: 0,
-            scrollY: 0,
-            foreignObjectRendering: false
+            onclone: function(clonedDoc) {
+                const clonedContainer = clonedDoc.getElementById('previewContainer');
+                const clonedAlbum = clonedDoc.getElementById('albumArtContainer');
+                const clonedReview = clonedDoc.getElementById('reviewPanel');
+                const clonedDynamicBg = clonedDoc.getElementById('dynamicBg');
+                const clonedOverlay = clonedDoc.getElementById('overlayLayer');
+                const clonedBgLayer = clonedDoc.getElementById('bgLayer');
+                
+                // Make background layers transparent so we can draw them manually
+                if (currentTheme === 'dark') {
+                    if (clonedDynamicBg) clonedDynamicBg.style.display = 'none';
+                    if (clonedOverlay) clonedOverlay.style.display = 'none';
+                    if (clonedBgLayer) clonedBgLayer.style.background = 'transparent';
+                }
+                
+                if (clonedAlbum) {
+                    clonedAlbum.style.boxShadow = 'none';
+                    clonedAlbum.style.overflow = 'hidden';
+                    clonedAlbum.style.borderRadius = elements.borderRadius.value + 'px';
+                }
+                
+                if (clonedReview) {
+                    clonedReview.style.boxShadow = 'none';
+                }
+            }
         });
+        
+        // Step 3: Draw album shadow BEFORE content
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+        ctx.shadowBlur = 80;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 40;
+        ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+        drawRoundedRect(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
+        ctx.fill();
+        ctx.restore();
+        
+        // Step 4: Draw review panel shadow BEFORE content
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+        ctx.shadowBlur = 30;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 10;
+        ctx.fillStyle = currentTheme === 'dark' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.6)';
+        const reviewBorderRadius = 16;
+        drawRoundedRect(ctx, reviewX, reviewY, reviewWidth, reviewHeight, reviewBorderRadius);
+        ctx.fill();
+        ctx.restore();
+        
+        // Step 5: Draw content canvas on top (which has the album with proper border-radius)
+        ctx.drawImage(contentCanvas, 0, 0);
+        
+        // Step 6: Re-draw the album cover with proper rounded corners to fix any clipping issues
+        if (albumImg.complete && albumImg.src) {
+            ctx.save();
+            drawRoundedRect(ctx, albumX, albumY, albumWidth, albumHeight, borderRadius);
+            ctx.clip();
+            ctx.drawImage(albumImg, albumX, albumY, albumWidth, albumHeight);
+            ctx.restore();
+        }
         
         // Restore original styles
         container.style.transform = originalTransform;
-        albumContainer.style.boxShadow = originalBoxShadow;
-        albumContainer.style.filter = '';
+        albumContainer.style.boxShadow = originalAlbumBoxShadow;
+        reviewPanel.style.boxShadow = originalReviewBoxShadow;
         
         // Create download link
         const link = document.createElement('a');
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
         const title = elements.trackTitle.value || 'music_summary';
         link.download = `${title}_${timestamp}.png`;
-        link.href = canvas.toDataURL('image/png', 1.0);
+        link.href = finalCanvas.toDataURL('image/png', 1.0);
         link.click();
         
         btn.textContent = '导出成功!';
