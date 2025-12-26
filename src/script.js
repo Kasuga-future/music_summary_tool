@@ -2220,12 +2220,14 @@ function loadLayoutSettings() {
         if (settings.progressTimeFontSize) elements.progressTimeFontSize.value = settings.progressTimeFontSize;
         if (settings.reviewMetaFontSize) elements.reviewMetaFontSize.value = settings.reviewMetaFontSize;
         
-        // Gray scale settings
-        if (settings.titleGray) elements.titleGray.value = settings.titleGray;
-        if (settings.artistGray) elements.artistGray.value = settings.artistGray;
-        if (settings.lyricsGray) elements.lyricsGray.value = settings.lyricsGray;
-        if (settings.translationGray) elements.translationGray.value = settings.translationGray;
-        if (settings.reviewGray) elements.reviewGray.value = settings.reviewGray;
+        // Gray scale settings - always use current theme's default values
+        // This ensures gray scale is correctly applied when switching layouts
+        const themeDefaults = getDefaultSettings(currentLayout, currentTheme);
+        elements.titleGray.value = themeDefaults.titleGray;
+        elements.artistGray.value = themeDefaults.artistGray;
+        elements.lyricsGray.value = themeDefaults.lyricsGray;
+        elements.translationGray.value = themeDefaults.translationGray;
+        elements.reviewGray.value = themeDefaults.reviewGray;
         
         // Apply checkbox values
         if (settings.showLyrics !== undefined) elements.showLyrics.checked = settings.showLyrics;

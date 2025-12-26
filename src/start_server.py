@@ -6,8 +6,8 @@ Music Summary Tool - Local Server Starter
 使用方法 / Usage:
     python start_server.py
 
-服务器启动后，在浏览器中打开 http://localhost:8080
-After the server starts, open http://localhost:8080 in your browser
+服务器启动后，在浏览器中打开 http://localhost:7999
+After the server starts, open http://localhost:7999 in your browser
 """
 
 import http.server
@@ -17,7 +17,7 @@ import os
 import sys
 
 # 配置
-PORT = 8080
+PORT = 7999
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 

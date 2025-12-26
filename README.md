@@ -53,8 +53,8 @@
 **使用 Python:**
 ```bash
 cd src
-python -m http.server 8080
-# 然后打开 http://localhost:8080
+python -m http.server 7999
+# 然后打开 http://localhost:7999
 ```
 
 **使用 Node.js:**
