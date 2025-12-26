@@ -1,7 +1,8 @@
 /**
  * Music Summary - Main Script
  * 音乐总结工具核心逻辑
- * 支持 3840x2160 (4K) 输出
+ * 支持 3840x2160 (4K) 横屏输出
+ * 支持 2160x3840 竖屏输出 (+1440px 评价区域可选)
  */
 
 // ============================================
@@ -12,6 +13,7 @@ let currentCoverUrl = null;
 let totalDuration = 205; // 默认 3:25
 let currentPalette = [];
 let albumPalette = []; // 保存从专辑封面提取的颜色
+let currentLayout = 'horizontal'; // 'horizontal' or 'vertical'
 
 // DOM Element References
 const elements = {};
@@ -190,6 +192,11 @@ function initializeElements() {
     elements.displayReviewAuthor = document.getElementById('displayReviewAuthor');
     elements.displayReviewDate = document.getElementById('displayReviewDate');
     
+    // Vertical mode review elements
+    elements.verticalReviewContent = document.getElementById('displayVerticalReviewContent');
+    elements.verticalReviewAuthor = document.getElementById('displayVerticalReviewAuthor');
+    elements.verticalReviewDate = document.getElementById('displayVerticalReviewDate');
+    
     elements.scaleValue = document.getElementById('scaleValue');
     
     // Set data labels for edit mode
@@ -303,6 +310,19 @@ function populateFontSelectors() {
 }
 
 function initializeEventListeners() {
+    // Layout mode buttons
+    document.querySelectorAll('.layout-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setLayoutMode(btn.dataset.layout);
+        });
+    });
+    
+    // Vertical mode options
+    document.getElementById('showVerticalReview').addEventListener('change', updateVerticalReview);
+    document.getElementById('verticalTitlePosition').addEventListener('change', updateVerticalTitlePosition);
+    
     // Theme buttons
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -808,6 +828,13 @@ function updateReviewDisplay() {
     elements.displayReviewContent.textContent = content;
     elements.displayReviewAuthor.textContent = author;
     elements.displayReviewDate.textContent = date;
+    
+    // Sync to vertical review section
+    if (elements.verticalReviewContent) {
+        elements.verticalReviewContent.textContent = content;
+        elements.verticalReviewAuthor.textContent = author;
+        elements.verticalReviewDate.textContent = date;
+    }
 }
 
 function updateProgress() {
@@ -942,6 +969,13 @@ function updateStyles() {
     elements.displayReviewAuthor.style.fontSize = reviewMetaFontSize;
     elements.displayReviewDate.style.fontSize = reviewMetaFontSize;
     
+    // Sync font sizes to vertical review section
+    if (elements.verticalReviewContent) {
+        elements.verticalReviewContent.style.fontSize = reviewFontSize;
+        elements.verticalReviewAuthor.style.fontSize = reviewMetaFontSize;
+        elements.verticalReviewDate.style.fontSize = reviewMetaFontSize;
+    }
+    
     // Apply lyrics height
     const lyricsHeight = elements.lyricsHeight.value + '%';
     elements.lyricsPanel.style.flex = `0 0 ${lyricsHeight}`;
@@ -1007,6 +1041,11 @@ function updateStyles() {
     });
     
     elements.displayReviewContent.style.color = `rgb(${reviewGray}, ${reviewGray}, ${reviewGray})`;
+    
+    // Sync styles to vertical review section
+    if (elements.verticalReviewContent) {
+        elements.verticalReviewContent.style.color = `rgb(${reviewGray}, ${reviewGray}, ${reviewGray})`;
+    }
 }
 
 function updateElementPositions() {
@@ -1194,6 +1233,11 @@ function updateFonts() {
     // Apply review font
     const reviewFont = elements.reviewFont.value;
     elements.displayReviewContent.style.fontFamily = `"${reviewFont}", serif`;
+    
+    // Sync font to vertical review section
+    if (elements.verticalReviewContent) {
+        elements.verticalReviewContent.style.fontFamily = `"${reviewFont}", serif`;
+    }
 }
 
 // ============================================
@@ -1207,13 +1251,101 @@ function updatePreviewScale() {
     const availableWidth = wrapper.clientWidth - 40;
     const availableHeight = wrapper.clientHeight - 40;
     
-    // Calculate scale to fit 3840x2160 into available space
-    const scaleX = availableWidth / 3840;
-    const scaleY = availableHeight / 2160;
+    // Get dimensions based on layout mode
+    let targetWidth, targetHeight;
+    if (currentLayout === 'vertical') {
+        targetWidth = 2160;
+        const showReview = document.getElementById('showVerticalReview').checked;
+        targetHeight = showReview ? 5280 : 3840;
+    } else {
+        targetWidth = 3840;
+        targetHeight = 2160;
+    }
+    
+    // Calculate scale to fit into available space
+    const scaleX = availableWidth / targetWidth;
+    const scaleY = availableHeight / targetHeight;
     const scale = Math.min(scaleX, scaleY, 1);
     
     container.style.transform = `scale(${scale})`;
     elements.scaleValue.textContent = `${Math.round(scale * 100)}%`;
+}
+
+// ============================================
+// Layout Mode Management
+// ============================================
+function setLayoutMode(layout) {
+    currentLayout = layout;
+    const container = elements.previewContainer;
+    const verticalOptions = document.getElementById('verticalOptions');
+    const resolutionInfo = document.getElementById('resolutionInfo');
+    
+    if (layout === 'vertical') {
+        container.classList.add('vertical-mode');
+        verticalOptions.style.display = 'block';
+        updateVerticalReview();
+        updateVerticalTitlePosition();
+        updateResolutionDisplay();
+    } else {
+        container.classList.remove('vertical-mode', 'with-review', 'title-above');
+        verticalOptions.style.display = 'none';
+        resolutionInfo.innerHTML = '<span>输出分辨率: 3840 × 2160</span>';
+    }
+    
+    updatePreviewScale();
+}
+
+function updateVerticalReview() {
+    const container = elements.previewContainer;
+    const showReview = document.getElementById('showVerticalReview').checked;
+    
+    if (showReview) {
+        container.classList.add('with-review');
+    } else {
+        container.classList.remove('with-review');
+    }
+    
+    updateResolutionDisplay();
+    updatePreviewScale();
+}
+
+function updateVerticalTitlePosition() {
+    const container = elements.previewContainer;
+    const position = document.getElementById('verticalTitlePosition').value;
+    
+    if (position === 'above') {
+        container.classList.add('title-above');
+    } else {
+        container.classList.remove('title-above');
+    }
+}
+
+function updateResolutionDisplay() {
+    if (currentLayout !== 'vertical') return;
+    
+    const showReview = document.getElementById('showVerticalReview').checked;
+    const resolutionInfo = document.getElementById('resolutionInfo');
+    
+    if (showReview) {
+        resolutionInfo.innerHTML = '<span>输出分辨率: 2160 × 5280</span><br><small>(3840 + 1440 评价区)</small>';
+    } else {
+        resolutionInfo.innerHTML = '<span>输出分辨率: 2160 × 3840</span>';
+    }
+}
+
+// Get current export dimensions based on layout mode
+function getExportDimensions() {
+    if (currentLayout === 'vertical') {
+        const showReview = document.getElementById('showVerticalReview').checked;
+        return {
+            width: 2160,
+            height: showReview ? 5280 : 3840
+        };
+    }
+    return {
+        width: 3840,
+        height: 2160
+    };
 }
 
 // ============================================
@@ -1367,6 +1499,7 @@ async function exportScreenshot() {
     
     const container = elements.previewContainer;
     const originalTransform = container.style.transform;
+    const { width, height } = getExportDimensions();
     
     try {
         // Remove transform for 100% scale capture
@@ -1377,8 +1510,8 @@ async function exportScreenshot() {
         
         // Use dom-to-image-more for better CSS support
         const dataUrl = await domtoimage.toPng(container, {
-            width: 3840,
-            height: 2160,
+            width: width,
+            height: height,
             style: {
                 transform: 'none'
             },
@@ -1395,7 +1528,8 @@ async function exportScreenshot() {
         const link = document.createElement('a');
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
         const title = elements.trackTitle.value || 'music_summary';
-        link.download = `${title}_${timestamp}.png`;
+        const layoutSuffix = currentLayout === 'vertical' ? '_vertical' : '_horizontal';
+        link.download = `${title}${layoutSuffix}_${timestamp}.png`;
         link.href = dataUrl;
         link.click();
         
@@ -1428,6 +1562,7 @@ async function copyToClipboard() {
     
     const container = elements.previewContainer;
     const originalTransform = container.style.transform;
+    const { width, height } = getExportDimensions();
     
     try {
         // Remove transform for 100% scale capture
@@ -1438,8 +1573,8 @@ async function copyToClipboard() {
         
         // Use dom-to-image-more to get blob
         const blob = await domtoimage.toBlob(container, {
-            width: 3840,
-            height: 2160,
+            width: width,
+            height: height,
             style: {
                 transform: 'none'
             }

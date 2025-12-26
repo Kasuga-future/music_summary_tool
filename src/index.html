@@ -24,6 +24,41 @@
             </div>
 
             <div class="sidebar-content" id="sidebarContent">
+                <!-- Layout Mode Selection -->
+                <section class="config-section collapsible">
+                    <h2 class="section-title" onclick="toggleSection(this)">
+                        <span>布局模式</span>
+                        <span class="collapse-icon">▼</span>
+                    </h2>
+                    <div class="section-content">
+                        <div class="layout-buttons">
+                            <button class="layout-btn active" data-layout="horizontal">
+                                <span class="layout-icon">▬</span>
+                                <span>横屏 3840×2160</span>
+                            </button>
+                            <button class="layout-btn" data-layout="vertical">
+                                <span class="layout-icon">▮</span>
+                                <span>竖屏 2160×3840</span>
+                            </button>
+                        </div>
+                        <div class="vertical-options" id="verticalOptions" style="display: none;">
+                            <div class="checkbox-group" style="margin-top: 12px;">
+                                <label>
+                                    <input type="checkbox" id="showVerticalReview">
+                                    添加评价区域 (+1440px)
+                                </label>
+                            </div>
+                            <div class="input-group" style="margin-top: 8px;">
+                                <label>标题/歌手位置</label>
+                                <select id="verticalTitlePosition" class="font-select">
+                                    <option value="below">封面下方</option>
+                                    <option value="above">封面上方</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Theme Selection -->
                 <section class="config-section collapsible">
                     <h2 class="section-title" onclick="toggleSection(this)">
@@ -407,8 +442,8 @@
                         <span class="collapse-icon">▼</span>
                     </h2>
                     <div class="section-content">
-                        <div class="resolution-info">
-                            <span>输出分辨率: 3840 x 2160 </span>
+                        <div class="resolution-info" id="resolutionInfo">
+                            <span>输出分辨率: 3840 × 2160</span>
                         </div>
                         <button class="export-btn" id="exportBtn">导出截图 (PNG)</button>
                         <button class="export-btn clipboard-btn" id="copyBtn">复制到剪贴板</button>
@@ -470,13 +505,24 @@
                                 </div>
                             </div>
 
-                            <!-- Review Panel -->
+                            <!-- Review Panel (Horizontal Mode) -->
                             <div class="review-panel" id="reviewPanel">
                                 <p class="review-text" id="displayReviewContent">在这里输入您对这首歌曲的评价...</p>
                                 <div class="review-meta">
                                     <span class="review-author" id="displayReviewAuthor">署名</span>
                                     <span class="review-date" id="displayReviewDate">2024.12.25</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vertical Mode Review Section (2160x1440 extension) -->
+                    <div class="vertical-review-section" id="verticalReviewSection">
+                        <div class="review-panel vertical-review" id="verticalReviewPanel">
+                            <p class="review-text" id="displayVerticalReviewContent">在这里输入您对这首歌曲的评价...</p>
+                            <div class="review-meta">
+                                <span class="review-author" id="displayVerticalReviewAuthor">署名</span>
+                                <span class="review-date" id="displayVerticalReviewDate">2024.12.25</span>
                             </div>
                         </div>
                     </div>

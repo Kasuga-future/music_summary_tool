@@ -838,3 +838,221 @@ htmlbody {
     opacity: 0.8;
     z-index: 1001;
 }
+
+/* ============================================
+   Layout Mode Buttons
+   ============================================ */
+.layout-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.layout-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.layout-btn:hover {
+    background: var(--border-color);
+}
+
+.layout-btn.active {
+    background: #666;
+    color: white;
+    border-color: #666;
+}
+
+.layout-icon {
+    font-size: 1.2rem;
+}
+
+.vertical-options {
+    border-top: 1px dashed var(--border-color);
+    padding-top: 12px;
+    margin-top: 12px;
+}
+
+/* ============================================
+   Vertical Layout Mode (2160x3840)
+   ============================================ */
+.preview-container.vertical-mode {
+    width: 2160px;
+    height: 3840px;
+}
+
+.preview-container.vertical-mode.with-review {
+    height: 5280px;
+    /* 3840 + 1440 */
+}
+
+.preview-container.vertical-mode .preview-content {
+    flex-direction: column;
+    padding: 100px 120px;
+    gap: 60px;
+    height: 3840px;
+    /* Ensure content fits in main area */
+    box-sizing: border-box;
+}
+
+.preview-container.vertical-mode.with-review .preview-content {
+    height: 3840px;
+    /* Keep same height, review is in separate section */
+}
+
+.preview-container.vertical-mode .left-column,
+.preview-container.vertical-mode .right-column {
+    width: 100%;
+    flex: none;
+    padding: 0;
+}
+
+/* Vertical mode - Album section */
+.preview-container.vertical-mode .left-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 50px;
+    flex: 0 0 auto;
+    /* Don't grow, just fit content */
+}
+
+.preview-container.vertical-mode .album-art-container {
+    width: 1200px;
+    height: 1200px;
+    margin-bottom: 0;
+    order: 0;
+    /* Cover first by default */
+}
+
+.preview-container.vertical-mode .metadata-panel {
+    width: 100%;
+    text-align: center;
+    order: 1;
+    /* Default: below cover */
+}
+
+.preview-container.vertical-mode.title-above .metadata-panel {
+    order: -1;
+    /* Title above cover */
+}
+
+.preview-container.vertical-mode.title-above .album-art-container {
+    order: 0;
+}
+
+.preview-container.vertical-mode .progress-panel {
+    width: 1200px;
+    order: 2;
+}
+
+/* Vertical mode - Lyrics section */
+.preview-container.vertical-mode .right-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 800px;
+    position: relative;
+}
+
+.preview-container.vertical-mode .lyrics-panel {
+    height: 100%;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Lyrics fade mask for vertical mode */
+.preview-container.vertical-mode .lyrics-panel::before,
+.preview-container.vertical-mode .lyrics-panel::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 180px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.preview-container.vertical-mode .lyrics-panel::before {
+    top: 0;
+    background: linear-gradient(to bottom,
+            var(--lyrics-fade-color, rgba(0, 0, 0, 0.85)) 0%,
+            var(--lyrics-fade-color-mid, rgba(0, 0, 0, 0.4)) 50%,
+            transparent 100%);
+}
+
+.preview-container.vertical-mode .lyrics-panel::after {
+    bottom: 0;
+    background: linear-gradient(to top,
+            var(--lyrics-fade-color, rgba(0, 0, 0, 0.85)) 0%,
+            var(--lyrics-fade-color-mid, rgba(0, 0, 0, 0.4)) 50%,
+            transparent 100%);
+}
+
+.preview-container.vertical-mode .lyrics-lines {
+    padding: 180px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+.preview-container.vertical-mode .lyric-line {
+    text-align: center;
+}
+
+/* Vertical mode - Review section (optional extension) */
+.preview-container.vertical-mode .review-panel {
+    display: none;
+    /* Hidden in main area */
+}
+
+.preview-container.vertical-mode .vertical-review-section {
+    display: flex;
+    width: 2160px;
+    height: 1440px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 80px 120px;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-container.vertical-mode .vertical-review-section .review-panel {
+    display: block;
+    width: 90%;
+    min-height: 800px;
+}
+
+.preview-container.vertical-mode:not(.with-review) .vertical-review-section {
+    display: none;
+}
+
+/* Background layers for vertical mode */
+.preview-container.vertical-mode .bg-layer,
+.preview-container.vertical-mode .dynamic-bg,
+.preview-container.vertical-mode .overlay-layer {
+    width: 2160px;
+    height: 100%;
+}
+
+/* Hide horizontal review in vertical mode */
+.preview-container.vertical-mode .right-column .review-panel {
+    display: none !important;
+}
