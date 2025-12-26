@@ -45,22 +45,9 @@
 
 ### 方法二: 使用本地服务器 (推荐)
 
-**使用 VS Code Live Server:**
-1. 安装 VS Code 的 "Live Server" 扩展
-2. 右键点击 `src/index.html`
-3. 选择 "Open with Live Server"
-
-**使用 Python:**
-```bash
-cd src
-python -m http.server 7999
-# 然后打开 http://localhost:7999
-```
-
-**使用 Node.js:**
-```bash
-npx serve src
-```
+**使用 VS Code:**
+1. 安装 VS Code 和 Python3
+2. 在VS Code 中运行start_server.py
 
 ## 📖 使用指南
 
