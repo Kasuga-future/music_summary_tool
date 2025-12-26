@@ -849,18 +849,14 @@ htmlbody {
 
 .layout-btn {
     flex: 1;
-    padding: 12px 8px;
+    padding: 12px 16px;
     border: 1px solid var(--border-color);
     background: transparent;
     color: var(--text-secondary);
     border-radius: 8px;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
 }
 
 .layout-btn:hover {
@@ -873,175 +869,84 @@ htmlbody {
     border-color: #666;
 }
 
-.layout-icon {
-    font-size: 1.2rem;
-}
-
 .vertical-options {
     border-top: 1px dashed var(--border-color);
     padding-top: 12px;
     margin-top: 12px;
 }
 
-/* ============================================
-   Vertical Layout Mode (2160x3840)
-   ============================================ */
-.preview-container.vertical-mode {
-    width: 2160px;
-    height: 3840px;
+.module-title {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
-.preview-container.vertical-mode.with-review {
-    height: 5280px;
-    /* 3840 + 1440 */
+.module-checkbox {
+    margin: 6px 0;
 }
 
-.preview-container.vertical-mode .preview-content {
-    flex-direction: column;
-    padding: 100px 120px;
-    gap: 60px;
-    height: 3840px;
-    /* Ensure content fits in main area */
-    box-sizing: border-box;
-}
-
-.preview-container.vertical-mode.with-review .preview-content {
-    height: 3840px;
-    /* Keep same height, review is in separate section */
-}
-
-.preview-container.vertical-mode .left-column,
-.preview-container.vertical-mode .right-column {
-    width: 100%;
-    flex: none;
-    padding: 0;
-}
-
-/* Vertical mode - Album section */
-.preview-container.vertical-mode .left-column {
+.module-checkbox label {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 50px;
-    flex: 0 0 auto;
-    /* Don't grow, just fit content */
+    gap: 8px;
+    font-size: 0.85rem;
 }
 
-.preview-container.vertical-mode .album-art-container {
-    width: 1200px;
-    height: 1200px;
-    margin-bottom: 0;
-    order: 0;
-    /* Cover first by default */
+.module-required {
+    font-size: 0.7rem;
+    color: var(--accent-primary);
+    background: rgba(var(--accent-primary-rgb, 100, 100, 100), 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
-.preview-container.vertical-mode .metadata-panel {
-    width: 100%;
-    text-align: center;
-    order: 1;
-    /* Default: below cover */
+/* ============================================
+   Vertical Layout Mode - Modular Design
+   ============================================ */
+
+/* Hide horizontal content in vertical mode */
+.preview-container.vertical-mode .preview-content {
+    display: none;
 }
 
-.preview-container.vertical-mode.title-above .metadata-panel {
-    order: -1;
-    /* Title above cover */
-}
-
-.preview-container.vertical-mode.title-above .album-art-container {
-    order: 0;
-}
-
-.preview-container.vertical-mode .progress-panel {
-    width: 1200px;
-    order: 2;
-}
-
-/* Vertical mode - Lyrics section */
-.preview-container.vertical-mode .right-column {
-    flex: 1;
+/* Show vertical modules */
+.preview-container.vertical-mode .vertical-module {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 800px;
+    width: 2160px;
     position: relative;
-}
-
-.preview-container.vertical-mode .lyrics-panel {
-    height: 100%;
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-/* Lyrics fade mask for vertical mode */
-.preview-container.vertical-mode .lyrics-panel::before,
-.preview-container.vertical-mode .lyrics-panel::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 180px;
-    pointer-events: none;
+    box-sizing: border-box;
     z-index: 10;
 }
 
-.preview-container.vertical-mode .lyrics-panel::before {
-    top: 0;
-    background: linear-gradient(to bottom,
-            var(--lyrics-fade-color, rgba(0, 0, 0, 0.85)) 0%,
-            var(--lyrics-fade-color-mid, rgba(0, 0, 0, 0.4)) 50%,
-            transparent 100%);
+/* Hide vertical modules in horizontal mode */
+.preview-container:not(.vertical-mode) .vertical-module {
+    display: none;
 }
 
-.preview-container.vertical-mode .lyrics-panel::after {
-    bottom: 0;
-    background: linear-gradient(to top,
-            var(--lyrics-fade-color, rgba(0, 0, 0, 0.85)) 0%,
-            var(--lyrics-fade-color-mid, rgba(0, 0, 0, 0.4)) 50%,
-            transparent 100%);
-}
-
-.preview-container.vertical-mode .lyrics-lines {
-    padding: 180px 0;
+/* Base vertical container */
+.preview-container.vertical-mode {
+    width: 2160px;
+    height: 2400px;
+    /* Default: cover module only */
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    text-align: center;
 }
 
-.preview-container.vertical-mode .lyric-line {
-    text-align: center;
+/* Height variations based on modules */
+.preview-container.vertical-mode.with-lyrics {
+    height: 3360px;
+    /* 2400 + 960 */
 }
 
-/* Vertical mode - Review section (optional extension) */
-.preview-container.vertical-mode .review-panel {
-    display: none;
-    /* Hidden in main area */
+.preview-container.vertical-mode.with-review {
+    height: 3360px;
+    /* 2400 + 960 */
 }
 
-.preview-container.vertical-mode .vertical-review-section {
-    display: flex;
-    width: 2160px;
-    height: 1440px;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    padding: 80px 120px;
-    align-items: center;
-    justify-content: center;
-}
-
-.preview-container.vertical-mode .vertical-review-section .review-panel {
-    display: block;
-    width: 90%;
-    min-height: 800px;
-}
-
-.preview-container.vertical-mode:not(.with-review) .vertical-review-section {
-    display: none;
+.preview-container.vertical-mode.with-lyrics.with-review {
+    height: 4320px;
+    /* 2400 + 960 + 960 */
 }
 
 /* Background layers for vertical mode */
@@ -1052,7 +957,166 @@ htmlbody {
     height: 100%;
 }
 
-/* Hide horizontal review in vertical mode */
-.preview-container.vertical-mode .right-column .review-panel {
-    display: none !important;
+/* ============================================
+   Module 1: Cover + Title (2160x2400)
+   ============================================ */
+.cover-module {
+    height: 2400px;
+    padding: 120px;
+    box-sizing: border-box;
+}
+
+.cover-module .module-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 80px;
+}
+
+.cover-module .v-album-art-container {
+    width: 1600px;
+    height: 1600px;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+    order: 0;
+}
+
+.cover-module .v-album-art-container .album-art {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cover-module .v-metadata-panel {
+    text-align: center;
+    order: 1;
+}
+
+.cover-module .v-metadata-panel .track-title {
+    font-size: 96px;
+    margin-bottom: 30px;
+}
+
+.cover-module .v-metadata-panel .artist-name {
+    font-size: 64px;
+}
+
+/* Title above cover variant */
+.preview-container.vertical-mode.title-above .cover-module .v-metadata-panel {
+    order: -1;
+}
+
+/* ============================================
+   Module 2: Lyrics + Progress (2160x960)
+   ============================================ */
+.lyrics-module {
+    height: 960px;
+    padding: 0 120px 60px 120px;
+    box-sizing: border-box;
+}
+
+.lyrics-module .module-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.lyrics-module .v-lyrics-panel {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    /* Use mask-image like horizontal mode for lyrics fade */
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+.lyrics-module .v-lyrics-container {
+    padding: 100px 0;
+}
+
+/* Lyrics alignment support */
+.lyrics-module .v-lyrics-panel.align-left .v-lyrics-container {
+    text-align: left;
+}
+
+.lyrics-module .v-lyrics-panel.align-center .v-lyrics-container {
+    text-align: center;
+}
+
+.lyrics-module .v-lyrics-container .lyrics-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.lyrics-module .v-lyrics-container .lyric-line {
+    /* inherit text-align from container */
+}
+
+.lyrics-module .v-progress-panel {
+    flex-shrink: 0;
+    padding-top: 40px;
+}
+
+.lyrics-module .v-progress-panel .progress-bar-container {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   Module 3: Review (2160x960)
+   ============================================ */
+.review-module {
+    height: 960px;
+    padding: 0 120px 60px 120px;
+    box-sizing: border-box;
+}
+
+.review-module .module-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 60px;
+}
+
+.review-module .v-review-panel {
+    width: 100%;
+    max-width: 1800px;
+    padding: 80px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.review-module .v-review-panel .review-text {
+    font-size: 48px;
+    line-height: 1.8;
+    margin-bottom: 60px;
+}
+
+.review-module .v-review-panel .review-meta {
+    display: flex;
+    justify-content: flex-end;
+    gap: 40px;
+    font-size: 36px;
+    opacity: 0.7;
+}
+
+/* Hide modules based on state */
+.preview-container.vertical-mode:not(.with-lyrics) .lyrics-module {
+    display: none;
+}
+
+.preview-container.vertical-mode:not(.with-review) .review-module {
+    display: none;
 }

@@ -29,7 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSystemFonts();
     initializeEventListeners();
     loadSettings();
-    setTheme('dark');
+    
+    // Apply saved layout and theme
+    setTheme(currentTheme || 'dark');
+    if (currentLayout === 'vertical') {
+        setLayoutMode('vertical');
+    }
+    
     updatePreviewScale();
     generateDefaultCover();
     renderInkBackground();
@@ -192,11 +198,6 @@ function initializeElements() {
     elements.displayReviewAuthor = document.getElementById('displayReviewAuthor');
     elements.displayReviewDate = document.getElementById('displayReviewDate');
     
-    // Vertical mode review elements
-    elements.verticalReviewContent = document.getElementById('displayVerticalReviewContent');
-    elements.verticalReviewAuthor = document.getElementById('displayVerticalReviewAuthor');
-    elements.verticalReviewDate = document.getElementById('displayVerticalReviewDate');
-    
     elements.scaleValue = document.getElementById('scaleValue');
     
     // Set data labels for edit mode
@@ -319,8 +320,9 @@ function initializeEventListeners() {
         });
     });
     
-    // Vertical mode options
-    document.getElementById('showVerticalReview').addEventListener('change', updateVerticalReview);
+    // Vertical mode module options
+    document.getElementById('showLyricsModule').addEventListener('change', updateVerticalModules);
+    document.getElementById('showReviewModule').addEventListener('change', updateVerticalModules);
     document.getElementById('verticalTitlePosition').addEventListener('change', updateVerticalTitlePosition);
     
     // Theme buttons
@@ -598,6 +600,10 @@ function setCoverImage(url) {
     // Set cover image
     elements.albumArt.src = url;
     
+    // Sync to vertical mode
+    const vAlbumArt = document.getElementById('vAlbumArt');
+    if (vAlbumArt) vAlbumArt.src = url;
+    
     // Set dynamic background for dark theme
     if (currentTheme === 'dark') {
         elements.dynamicBg.style.backgroundImage = `url(${url})`;
@@ -672,6 +678,12 @@ function updateDisplayText() {
     
     elements.displayTitle.textContent = title;
     elements.displayArtist.textContent = artist;
+    
+    // Sync to vertical mode
+    const vTitle = document.getElementById('vDisplayTitle');
+    const vArtist = document.getElementById('vDisplayArtist');
+    if (vTitle) vTitle.textContent = title;
+    if (vArtist) vArtist.textContent = artist;
 }
 
 function updateLyrics() {
@@ -690,6 +702,11 @@ function updateLyrics() {
     
     // Center current lyric in the container
     centerCurrentLyric();
+    
+    // Sync to vertical mode
+    if (currentLayout === 'vertical') {
+        syncVerticalLyrics();
+    }
 }
 
 function centerCurrentLyric() {
@@ -829,12 +846,13 @@ function updateReviewDisplay() {
     elements.displayReviewAuthor.textContent = author;
     elements.displayReviewDate.textContent = date;
     
-    // Sync to vertical review section
-    if (elements.verticalReviewContent) {
-        elements.verticalReviewContent.textContent = content;
-        elements.verticalReviewAuthor.textContent = author;
-        elements.verticalReviewDate.textContent = date;
-    }
+    // Sync to vertical review module
+    const vReviewContent = document.getElementById('vDisplayReviewContent');
+    const vReviewAuthor = document.getElementById('vDisplayReviewAuthor');
+    const vReviewDate = document.getElementById('vDisplayReviewDate');
+    if (vReviewContent) vReviewContent.textContent = content;
+    if (vReviewAuthor) vReviewAuthor.textContent = author;
+    if (vReviewDate) vReviewDate.textContent = date;
 }
 
 function updateProgress() {
@@ -842,6 +860,10 @@ function updateProgress() {
     
     // Update progress bar
     elements.progressBarFill.style.width = `${progress}%`;
+    
+    // Sync to vertical mode
+    const vProgressFill = document.getElementById('vProgressBarFill');
+    if (vProgressFill) vProgressFill.style.width = `${progress}%`;
     
     // Update time display
     updateTimeDisplay();
@@ -862,6 +884,12 @@ function updateTimeDisplay() {
     elements.totalTime.textContent = totalFormatted;
     elements.displayCurrentTime.textContent = currentFormatted;
     elements.displayTotalTime.textContent = totalFormatted;
+    
+    // Sync to vertical mode
+    const vCurrentTime = document.getElementById('vDisplayCurrentTime');
+    const vTotalTime = document.getElementById('vDisplayTotalTime');
+    if (vCurrentTime) vCurrentTime.textContent = currentFormatted;
+    if (vTotalTime) vTotalTime.textContent = totalFormatted;
 }
 
 function formatTime(seconds) {
@@ -969,11 +997,14 @@ function updateStyles() {
     elements.displayReviewAuthor.style.fontSize = reviewMetaFontSize;
     elements.displayReviewDate.style.fontSize = reviewMetaFontSize;
     
-    // Sync font sizes to vertical review section
-    if (elements.verticalReviewContent) {
-        elements.verticalReviewContent.style.fontSize = reviewFontSize;
-        elements.verticalReviewAuthor.style.fontSize = reviewMetaFontSize;
-        elements.verticalReviewDate.style.fontSize = reviewMetaFontSize;
+    // Sync font sizes to vertical review module
+    const vReviewContentEl = document.getElementById('vDisplayReviewContent');
+    const vReviewAuthorEl = document.getElementById('vDisplayReviewAuthor');
+    const vReviewDateEl = document.getElementById('vDisplayReviewDate');
+    if (vReviewContentEl) {
+        vReviewContentEl.style.fontSize = reviewFontSize;
+        if (vReviewAuthorEl) vReviewAuthorEl.style.fontSize = reviewMetaFontSize;
+        if (vReviewDateEl) vReviewDateEl.style.fontSize = reviewMetaFontSize;
     }
     
     // Apply lyrics height
@@ -1017,10 +1048,16 @@ function updateStyles() {
     const progressTimeFontSize = elements.progressTimeFontSize.value + 'px';
     document.querySelector('.progress-time').style.fontSize = progressTimeFontSize;
     
-    // Apply blur strength
+    // Apply blur strength (only for dark theme)
     const blurStrength = elements.blurStrength.value + 'px';
     elements.dynamicBg.style.filter = `blur(${blurStrength})`;
-    elements.overlayLayer.style.backdropFilter = `blur(${parseInt(blurStrength) * 0.75}px)`;
+    if (currentTheme === 'dark') {
+        elements.overlayLayer.style.backdropFilter = `blur(${parseInt(blurStrength) * 0.75}px)`;
+        elements.overlayLayer.style.background = 'var(--overlay-color)';
+    } else {
+        elements.overlayLayer.style.backdropFilter = 'none';
+        elements.overlayLayer.style.background = 'transparent';
+    }
     
     // Apply gray scale to text elements
     const titleGray = elements.titleGray.value;
@@ -1042,9 +1079,117 @@ function updateStyles() {
     
     elements.displayReviewContent.style.color = `rgb(${reviewGray}, ${reviewGray}, ${reviewGray})`;
     
-    // Sync styles to vertical review section
-    if (elements.verticalReviewContent) {
-        elements.verticalReviewContent.style.color = `rgb(${reviewGray}, ${reviewGray}, ${reviewGray})`;
+    // Sync styles to vertical review module
+    const vReviewContentColor = document.getElementById('vDisplayReviewContent');
+    if (vReviewContentColor) {
+        vReviewContentColor.style.color = `rgb(${reviewGray}, ${reviewGray}, ${reviewGray})`;
+    }
+    
+    // Sync all styles to vertical mode if active
+    if (currentLayout === 'vertical') {
+        syncVerticalStyles();
+    }
+}
+
+// Sync styles to vertical mode elements
+function syncVerticalStyles() {
+    // Sync cover size
+    const coverSize = elements.coverSize.value + 'px';
+    const vAlbumArt = document.getElementById('vAlbumArt');
+    const vAlbumArtContainer = document.querySelector('.cover-module .v-album-art-container');
+    if (vAlbumArtContainer) {
+        vAlbumArtContainer.style.width = coverSize;
+        vAlbumArtContainer.style.height = coverSize;
+    }
+    if (vAlbumArt) {
+        vAlbumArt.style.borderRadius = elements.borderRadius.value + 'px';
+    }
+    
+    // Sync title/artist styles
+    const vTitle = document.getElementById('vDisplayTitle');
+    const vArtist = document.getElementById('vDisplayArtist');
+    const vMetadataPanel = document.querySelector('.cover-module .v-metadata-panel');
+    if (vTitle) {
+        vTitle.style.fontSize = elements.titleFontSize.value + 'px';
+        vTitle.style.color = `rgb(${elements.titleGray.value}, ${elements.titleGray.value}, ${elements.titleGray.value})`;
+        vTitle.style.marginBottom = elements.titleArtistGap.value + 'px';
+        vTitle.style.fontFamily = `"${elements.titleFont.value}", sans-serif`;
+    }
+    if (vArtist) {
+        vArtist.style.fontSize = elements.artistFontSize.value + 'px';
+        vArtist.style.color = `rgb(${elements.artistGray.value}, ${elements.artistGray.value}, ${elements.artistGray.value})`;
+        vArtist.style.fontFamily = `"${elements.artistFont.value}", sans-serif`;
+    }
+    
+    // Sync gap between metadata and cover (using module content gap)
+    const vModuleContent = document.querySelector('.cover-module .module-content');
+    if (vModuleContent) {
+        vModuleContent.style.gap = elements.metadataCoverGap.value + 'px';
+    }
+    
+    // Sync progress bar styles
+    const vProgressBg = document.querySelector('.lyrics-module .progress-bar-bg');
+    const vProgressFill = document.getElementById('vProgressBarFill');
+    const vProgressTime = document.querySelector('.lyrics-module .progress-time');
+    const progressBarHeight = elements.progressBarHeight.value + 'px';
+    const progressTimeFontSize = elements.progressTimeFontSize.value + 'px';
+    
+    if (vProgressBg) {
+        vProgressBg.style.height = progressBarHeight;
+        vProgressBg.style.borderRadius = (parseInt(elements.progressBarHeight.value) / 2) + 'px';
+    }
+    if (vProgressFill) {
+        vProgressFill.style.height = progressBarHeight;
+        vProgressFill.style.borderRadius = (parseInt(elements.progressBarHeight.value) / 2) + 'px';
+    }
+    if (vProgressTime) {
+        vProgressTime.style.fontSize = progressTimeFontSize;
+    }
+    
+    // Sync lyrics fade effect using mask-image (same as horizontal mode)
+    const vLyricsPanel = document.getElementById('vLyricsPanel');
+    if (vLyricsPanel) {
+        const lyricsFade = parseInt(elements.lyricsFade.value);
+        const fadeEnd = 100 - lyricsFade;
+        const maskImage = `linear-gradient(to bottom, transparent 0%, black ${lyricsFade}%, black ${fadeEnd}%, transparent 100%)`;
+        vLyricsPanel.style.maskImage = maskImage;
+        vLyricsPanel.style.webkitMaskImage = maskImage;
+        
+        // Sync alignment
+        const lyricsAlign = elements.lyricsAlign.value;
+        vLyricsPanel.classList.remove('align-left', 'align-center');
+        vLyricsPanel.classList.add(`align-${lyricsAlign}`);
+    }
+    
+    // Sync lyrics styles
+    syncVerticalLyrics();
+    
+    // Sync review styles
+    const vReviewPanel = document.querySelector('.review-module .v-review-panel');
+    const vReviewContent = document.getElementById('vDisplayReviewContent');
+    const vReviewAuthor = document.getElementById('vDisplayReviewAuthor');
+    const vReviewDate = document.getElementById('vDisplayReviewDate');
+    
+    if (vReviewPanel) {
+        const reviewBgOpacity = elements.reviewBgOpacity.value / 100;
+        if (currentTheme === 'dark') {
+            vReviewPanel.style.background = `rgba(0, 0, 0, ${reviewBgOpacity})`;
+        } else {
+            vReviewPanel.style.background = `rgba(255, 255, 255, ${0.3 + reviewBgOpacity * 0.7})`;
+        }
+        vReviewPanel.style.width = elements.reviewBoxWidth.value + '%';
+        vReviewPanel.style.minHeight = elements.reviewBoxHeight.value + 'px';
+    }
+    if (vReviewContent) {
+        vReviewContent.style.fontSize = elements.reviewFontSize.value + 'px';
+        vReviewContent.style.color = `rgb(${elements.reviewGray.value}, ${elements.reviewGray.value}, ${elements.reviewGray.value})`;
+        vReviewContent.style.fontFamily = `"${elements.reviewFont.value}", sans-serif`;
+    }
+    if (vReviewAuthor) {
+        vReviewAuthor.style.fontSize = elements.reviewMetaFontSize.value + 'px';
+    }
+    if (vReviewDate) {
+        vReviewDate.style.fontSize = elements.reviewMetaFontSize.value + 'px';
     }
 }
 
@@ -1061,7 +1206,7 @@ function updateElementPositions() {
     elements.reviewXValue.textContent = elements.reviewX.value;
     elements.reviewYValue.textContent = elements.reviewY.value;
     
-    // Apply position transforms to individual elements
+    // Apply position transforms to individual elements (horizontal mode)
     const metadataX = parseInt(elements.metadataX.value);
     const metadataY = parseInt(elements.metadataY.value);
     elements.metadataPanel.style.transform = `translate(${metadataX}px, ${metadataY}px)`;
@@ -1081,6 +1226,31 @@ function updateElementPositions() {
     const reviewX = parseInt(elements.reviewX.value);
     const reviewY = parseInt(elements.reviewY.value);
     elements.reviewPanel.style.transform = `translate(${reviewX}px, ${reviewY}px)`;
+    
+    // Apply position transforms to vertical mode elements
+    if (currentLayout === 'vertical') {
+        const vMetadataPanel = document.querySelector('.cover-module .v-metadata-panel');
+        const vAlbumArtContainer = document.querySelector('.cover-module .v-album-art-container');
+        const vLyricsPanel = document.getElementById('vLyricsPanel');
+        const vProgressPanel = document.getElementById('vProgressPanel');
+        const vReviewPanel = document.querySelector('.review-module .v-review-panel');
+        
+        if (vMetadataPanel) {
+            vMetadataPanel.style.transform = `translate(${metadataX}px, ${metadataY}px)`;
+        }
+        if (vAlbumArtContainer) {
+            vAlbumArtContainer.style.transform = `translate(${coverX}px, ${coverY}px)`;
+        }
+        if (vLyricsPanel) {
+            vLyricsPanel.style.transform = `translate(${lyricsX}px, ${lyricsY}px)`;
+        }
+        if (vProgressPanel) {
+            vProgressPanel.style.transform = `translate(${progressX}px, ${progressY}px)`;
+        }
+        if (vReviewPanel) {
+            vReviewPanel.style.transform = `translate(${reviewX}px, ${reviewY}px)`;
+        }
+    }
 }
 
 function updateLayout() {
@@ -1100,6 +1270,24 @@ function updateAlignment() {
     elements.lyricsPanel.classList.remove('align-left', 'align-center');
     elements.lyricsPanel.classList.add(`align-${lyricsAlign}`);
     elements.lyricsContainer.style.textAlign = lyricsAlign;
+    
+    // Sync alignment to vertical mode
+    if (currentLayout === 'vertical') {
+        const vMetadataPanel = document.querySelector('.cover-module .v-metadata-panel');
+        const vLyricsPanel = document.getElementById('vLyricsPanel');
+        const vLyricsContainer = document.getElementById('vLyricsContainer');
+        
+        if (vMetadataPanel) {
+            vMetadataPanel.style.textAlign = metadataAlign;
+        }
+        if (vLyricsPanel) {
+            vLyricsPanel.classList.remove('align-left', 'align-center');
+            vLyricsPanel.classList.add(`align-${lyricsAlign}`);
+        }
+        if (vLyricsContainer) {
+            vLyricsContainer.style.textAlign = lyricsAlign;
+        }
+    }
 }
 
 function toggleEditMode() {
@@ -1234,9 +1422,17 @@ function updateFonts() {
     const reviewFont = elements.reviewFont.value;
     elements.displayReviewContent.style.fontFamily = `"${reviewFont}", serif`;
     
-    // Sync font to vertical review section
-    if (elements.verticalReviewContent) {
-        elements.verticalReviewContent.style.fontFamily = `"${reviewFont}", serif`;
+    // Sync fonts to vertical mode
+    if (currentLayout === 'vertical') {
+        const vTitle = document.getElementById('vDisplayTitle');
+        const vArtist = document.getElementById('vDisplayArtist');
+        const vReviewContent = document.getElementById('vDisplayReviewContent');
+        
+        if (vTitle) vTitle.style.fontFamily = `"${titleFont}", sans-serif`;
+        if (vArtist) vArtist.style.fontFamily = `"${artistFont}", sans-serif`;
+        if (vReviewContent) vReviewContent.style.fontFamily = `"${reviewFont}", serif`;
+        
+        syncVerticalLyrics();
     }
 }
 
@@ -1252,15 +1448,7 @@ function updatePreviewScale() {
     const availableHeight = wrapper.clientHeight - 40;
     
     // Get dimensions based on layout mode
-    let targetWidth, targetHeight;
-    if (currentLayout === 'vertical') {
-        targetWidth = 2160;
-        const showReview = document.getElementById('showVerticalReview').checked;
-        targetHeight = showReview ? 5280 : 3840;
-    } else {
-        targetWidth = 3840;
-        targetHeight = 2160;
-    }
+    const { width: targetWidth, height: targetHeight } = getExportDimensions();
     
     // Calculate scale to fit into available space
     const scaleX = availableWidth / targetWidth;
@@ -1275,19 +1463,29 @@ function updatePreviewScale() {
 // Layout Mode Management
 // ============================================
 function setLayoutMode(layout) {
+    // Save current layout settings before switching
+    if (currentLayout !== layout) {
+        saveSettings();
+    }
+    
     currentLayout = layout;
     const container = elements.previewContainer;
     const verticalOptions = document.getElementById('verticalOptions');
     const resolutionInfo = document.getElementById('resolutionInfo');
     
+    // Load settings for the new layout mode
+    loadLayoutSettings();
+    
     if (layout === 'vertical') {
         container.classList.add('vertical-mode');
         verticalOptions.style.display = 'block';
-        updateVerticalReview();
+        
+        // Initialize with default modules
+        updateVerticalModules();
         updateVerticalTitlePosition();
-        updateResolutionDisplay();
+        syncVerticalContent();
     } else {
-        container.classList.remove('vertical-mode', 'with-review', 'title-above');
+        container.classList.remove('vertical-mode', 'with-lyrics', 'with-review', 'title-above');
         verticalOptions.style.display = 'none';
         resolutionInfo.innerHTML = '<span>输出分辨率: 3840 × 2160</span>';
     }
@@ -1295,15 +1493,14 @@ function setLayoutMode(layout) {
     updatePreviewScale();
 }
 
-function updateVerticalReview() {
+function updateVerticalModules() {
     const container = elements.previewContainer;
-    const showReview = document.getElementById('showVerticalReview').checked;
+    const showLyrics = document.getElementById('showLyricsModule').checked;
+    const showReview = document.getElementById('showReviewModule').checked;
     
-    if (showReview) {
-        container.classList.add('with-review');
-    } else {
-        container.classList.remove('with-review');
-    }
+    // Update classes
+    container.classList.toggle('with-lyrics', showLyrics);
+    container.classList.toggle('with-review', showReview);
     
     updateResolutionDisplay();
     updatePreviewScale();
@@ -1323,23 +1520,103 @@ function updateVerticalTitlePosition() {
 function updateResolutionDisplay() {
     if (currentLayout !== 'vertical') return;
     
-    const showReview = document.getElementById('showVerticalReview').checked;
+    const showLyrics = document.getElementById('showLyricsModule').checked;
+    const showReview = document.getElementById('showReviewModule').checked;
     const resolutionInfo = document.getElementById('resolutionInfo');
     
-    if (showReview) {
-        resolutionInfo.innerHTML = '<span>输出分辨率: 2160 × 5280</span><br><small>(3840 + 1440 评价区)</small>';
-    } else {
-        resolutionInfo.innerHTML = '<span>输出分辨率: 2160 × 3840</span>';
+    let height = 2400; // Base: cover module
+    let modules = ['封面+标题 2400'];
+    
+    if (showLyrics) {
+        height += 960;
+        modules.push('歌词+进度 960');
     }
+    if (showReview) {
+        height += 960;
+        modules.push('评价 960');
+    }
+    
+    resolutionInfo.innerHTML = `<span>输出分辨率: 2160 × ${height}</span><br><small>(${modules.join(' + ')})</small>`;
+}
+
+// Sync content from horizontal to vertical modules
+function syncVerticalContent() {
+    // Sync title and artist
+    const vTitle = document.getElementById('vDisplayTitle');
+    const vArtist = document.getElementById('vDisplayArtist');
+    if (vTitle) vTitle.textContent = elements.displayTitle.textContent;
+    if (vArtist) vArtist.textContent = elements.displayArtist.textContent;
+    
+    // Sync album art
+    const vAlbumArt = document.getElementById('vAlbumArt');
+    if (vAlbumArt && elements.albumArt.src) {
+        vAlbumArt.src = elements.albumArt.src;
+    }
+    
+    // Sync progress bar
+    const vProgressFill = document.getElementById('vProgressBarFill');
+    const vCurrentTime = document.getElementById('vDisplayCurrentTime');
+    const vTotalTime = document.getElementById('vDisplayTotalTime');
+    if (vProgressFill) {
+        vProgressFill.style.width = elements.progressBarFill.style.width;
+    }
+    if (vCurrentTime) vCurrentTime.textContent = document.getElementById('displayCurrentTime').textContent;
+    if (vTotalTime) vTotalTime.textContent = document.getElementById('displayTotalTime').textContent;
+    
+    // Sync lyrics
+    syncVerticalLyrics();
+    
+    // Sync review
+    const vReviewContent = document.getElementById('vDisplayReviewContent');
+    const vReviewAuthor = document.getElementById('vDisplayReviewAuthor');
+    const vReviewDate = document.getElementById('vDisplayReviewDate');
+    if (vReviewContent) vReviewContent.textContent = elements.displayReviewContent.textContent;
+    if (vReviewAuthor) vReviewAuthor.textContent = elements.displayReviewAuthor.textContent;
+    if (vReviewDate) vReviewDate.textContent = elements.displayReviewDate.textContent;
+}
+
+function syncVerticalLyrics() {
+    const vLyricsContainer = document.getElementById('vLyricsContainer');
+    if (!vLyricsContainer) return;
+    
+    // Clone lyrics from horizontal mode
+    const horizontalLyrics = elements.lyricsContainer.innerHTML;
+    vLyricsContainer.innerHTML = horizontalLyrics;
+    
+    // Apply same styles
+    const lyricsFontSize = elements.lyricsFontSize.value + 'px';
+    const translationFontSize = elements.translationFontSize.value + 'px';
+    const lyricsGray = elements.lyricsGray.value;
+    const translationGray = elements.translationGray.value;
+    const lyricsFont = elements.lyricsFont.value;
+    const translationFont = elements.translationFont.value;
+    
+    vLyricsContainer.querySelectorAll('.lyric-text').forEach(el => {
+        el.style.fontSize = lyricsFontSize;
+        el.style.color = `rgb(${lyricsGray}, ${lyricsGray}, ${lyricsGray})`;
+        el.style.fontFamily = `"${lyricsFont}", sans-serif`;
+    });
+    
+    vLyricsContainer.querySelectorAll('.lyric-translation').forEach(el => {
+        el.style.fontSize = translationFontSize;
+        el.style.color = `rgb(${translationGray}, ${translationGray}, ${translationGray})`;
+        el.style.fontFamily = `"${translationFont}", sans-serif`;
+    });
 }
 
 // Get current export dimensions based on layout mode
 function getExportDimensions() {
     if (currentLayout === 'vertical') {
-        const showReview = document.getElementById('showVerticalReview').checked;
+        const showLyrics = document.getElementById('showLyricsModule').checked;
+        const showReview = document.getElementById('showReviewModule').checked;
+        
+        let height = 2400;
+        if (showLyrics) height += 960;
+        if (showReview) height += 960;
+        
         return {
             width: 2160,
-            height: showReview ? 5280 : 3840
+            height: height
         };
     }
     return {
@@ -1456,8 +1733,8 @@ function renderInkBackground(palette, options = {}) {
         const color = brightPalette[i % brightPalette.length];
         const posX = Math.floor(Math.random() * 100);
         const posY = Math.floor(Math.random() * 100);
-        const size = Math.floor(Math.random() * 24) + 32;
-        const opacity = (Math.random() * 0.1 + 0.14).toFixed(2);
+        const size = Math.floor(Math.random() * 30) + 40;
+        const opacity = (Math.random() * 0.15 + 0.18).toFixed(2);
         
         gradients.push(
             `radial-gradient(circle at ${posX}% ${posY}%, rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity}) 0%, rgba(${color[0]}, ${color[1]}, ${color[2]}, 0) ${size}%)`
@@ -1469,8 +1746,8 @@ function renderInkBackground(palette, options = {}) {
         const color = brightPalette[i % brightPalette.length];
         const posX = Math.floor(Math.random() * 100);
         const posY = Math.floor(Math.random() * 100);
-        const size = Math.floor(Math.random() * 45) + 75;
-        const opacity = (Math.random() * 0.06 + 0.05).toFixed(2);
+        const size = Math.floor(Math.random() * 50) + 80;
+        const opacity = (Math.random() * 0.08 + 0.06).toFixed(2);
         
         gradients.push(
             `radial-gradient(circle at ${posX}% ${posY}%, rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity}) 0%, rgba(${color[0]}, ${color[1]}, ${color[2]}, 0) ${size}%)`
@@ -1642,6 +1919,10 @@ function initializeScrollNav() {
 // ============================================
 // Settings Persistence
 // ============================================
+function getSettingsStorageKey() {
+    return currentLayout === 'vertical' ? 'musicSummarySettings_vertical' : 'musicSummarySettings_horizontal';
+}
+
 function saveSettings() {
     const settings = {
         coverSize: elements.coverSize.value,
@@ -1697,11 +1978,40 @@ function saveSettings() {
         reviewY: elements.reviewY.value
     };
     
-    localStorage.setItem('musicSummarySettings', JSON.stringify(settings));
+    // Save to layout-specific key
+    localStorage.setItem(getSettingsStorageKey(), JSON.stringify(settings));
+    
+    // Also save layout mode and theme to common settings
+    const commonSettings = {
+        currentLayout: currentLayout,
+        theme: currentTheme
+    };
+    localStorage.setItem('musicSummarySettings_common', JSON.stringify(commonSettings));
 }
 
 function loadSettings() {
-    const saved = localStorage.getItem('musicSummarySettings');
+    // First load common settings (layout and theme)
+    const commonSaved = localStorage.getItem('musicSummarySettings_common');
+    if (commonSaved) {
+        try {
+            const commonSettings = JSON.parse(commonSaved);
+            if (commonSettings.currentLayout) {
+                currentLayout = commonSettings.currentLayout;
+            }
+            if (commonSettings.theme) {
+                currentTheme = commonSettings.theme;
+            }
+        } catch (e) {
+            console.log('Error loading common settings:', e);
+        }
+    }
+    
+    // Then load layout-specific settings
+    loadLayoutSettings();
+}
+
+function loadLayoutSettings() {
+    const saved = localStorage.getItem(getSettingsStorageKey());
     if (!saved) return;
     
     try {
@@ -1774,9 +2084,6 @@ function loadSettings() {
         if (settings.reviewX) elements.reviewX.value = settings.reviewX;
         if (settings.reviewY) elements.reviewY.value = settings.reviewY;
         
-        // Apply theme
-        if (settings.theme) currentTheme = settings.theme;
-        
         // Update displays
         updateStyles();
         updateFonts();
@@ -1785,7 +2092,7 @@ function loadSettings() {
         updateAlignment();
         
     } catch (e) {
-        console.log('Error loading settings:', e);
+        console.log('Error loading layout settings:', e);
     }
 }
 
