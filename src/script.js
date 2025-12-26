@@ -24,7 +24,18 @@ let availableFonts = [];
 // ============================================
 // Initialization
 // ============================================
+const SETTINGS_VERSION = '2.0'; // Update this to reset settings to new defaults
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Check settings version - reset if outdated
+    const savedVersion = localStorage.getItem('musicSummarySettings_version');
+    if (savedVersion !== SETTINGS_VERSION) {
+        localStorage.removeItem('musicSummarySettings_horizontal');
+        localStorage.removeItem('musicSummarySettings_vertical');
+        localStorage.removeItem('musicSummarySettings_common');
+        localStorage.setItem('musicSummarySettings_version', SETTINGS_VERSION);
+    }
+    
     initializeElements();
     loadSystemFonts();
     initializeEventListeners();
@@ -88,6 +99,7 @@ function initializeElements() {
     elements.reviewMetaFontSize = document.getElementById('reviewMetaFontSize');
     elements.lyricsLineGap = document.getElementById('lyricsLineGap');
     elements.lyricsHeight = document.getElementById('lyricsHeight');
+    elements.lyricsWidth = document.getElementById('lyricsWidth');
     elements.lyricsFade = document.getElementById('lyricsFade');
     elements.reviewBoxWidth = document.getElementById('reviewBoxWidth');
     elements.reviewBoxHeight = document.getElementById('reviewBoxHeight');
@@ -115,6 +127,7 @@ function initializeElements() {
     elements.reviewMetaFontSizeValue = document.getElementById('reviewMetaFontSizeValue');
     elements.lyricsLineGapValue = document.getElementById('lyricsLineGapValue');
     elements.lyricsHeightValue = document.getElementById('lyricsHeightValue');
+    elements.lyricsWidthValue = document.getElementById('lyricsWidthValue');
     elements.lyricsFadeValue = document.getElementById('lyricsFadeValue');
     elements.reviewBoxWidthValue = document.getElementById('reviewBoxWidthValue');
     elements.reviewBoxHeightValue = document.getElementById('reviewBoxHeightValue');
@@ -370,6 +383,7 @@ function initializeEventListeners() {
     elements.reviewFontSize.addEventListener('input', updateStyles);
     elements.lyricsLineGap.addEventListener('input', () => { updateStyles(); updateLyrics(); });
     elements.lyricsHeight.addEventListener('input', updateStyles);
+    elements.lyricsWidth.addEventListener('input', updateStyles);
     elements.lyricsFade.addEventListener('input', updateStyles);
     elements.reviewBoxWidth.addEventListener('input', updateStyles);
     elements.reviewBoxHeight.addEventListener('input', updateStyles);
@@ -703,10 +717,8 @@ function updateLyrics() {
     // Center current lyric in the container
     centerCurrentLyric();
     
-    // Sync to vertical mode
-    if (currentLayout === 'vertical') {
-        syncVerticalLyrics();
-    }
+    // Always sync to vertical mode (so it's ready when switching)
+    syncVerticalLyrics();
 }
 
 function centerCurrentLyric() {
@@ -726,6 +738,32 @@ function centerCurrentLyric() {
     
     // Apply transform to container to scroll
     container.style.transform = `translateY(${-centerOffset}px)`;
+    
+    // Also center vertical mode lyrics
+    centerVerticalLyric(centerOffset);
+}
+
+function centerVerticalLyric(horizontalOffset) {
+    const vContainer = document.getElementById('vLyricsContainer');
+    const vPanel = document.getElementById('vLyricsPanel');
+    if (!vContainer || !vPanel) return;
+    
+    const currentLine = vContainer.querySelector('.current-line');
+    if (!currentLine) {
+        // Use horizontal offset if no current line found yet
+        vContainer.style.transform = `translateY(${-horizontalOffset}px)`;
+        return;
+    }
+    
+    // Get panel height for vertical mode
+    const panelHeight = vPanel.clientHeight;
+    
+    // Calculate offset to center current lyric
+    const currentLineTop = currentLine.offsetTop;
+    const currentLineHeight = currentLine.offsetHeight;
+    const centerOffset = currentLineTop - (panelHeight / 2) + (currentLineHeight / 2);
+    
+    vContainer.style.transform = `translateY(${-centerOffset}px)`;
 }
 
 function applyLyricsStyles() {
@@ -934,6 +972,7 @@ function updateStyles() {
     elements.reviewMetaFontSizeValue.textContent = elements.reviewMetaFontSize.value;
     elements.lyricsLineGapValue.textContent = elements.lyricsLineGap.value;
     elements.lyricsHeightValue.textContent = elements.lyricsHeight.value;
+    elements.lyricsWidthValue.textContent = elements.lyricsWidth.value;
     elements.lyricsFadeValue.textContent = elements.lyricsFade.value;
     elements.reviewBoxWidthValue.textContent = elements.reviewBoxWidth.value;
     elements.reviewBoxHeightValue.textContent = elements.reviewBoxHeight.value;
@@ -1010,6 +1049,11 @@ function updateStyles() {
     // Apply lyrics height
     const lyricsHeight = elements.lyricsHeight.value + '%';
     elements.lyricsPanel.style.flex = `0 0 ${lyricsHeight}`;
+    
+    // Apply lyrics width (for both horizontal and vertical modes)
+    const lyricsWidth = elements.lyricsWidth.value + '%';
+    elements.lyricsContainer.style.width = lyricsWidth;
+    elements.lyricsContainer.style.margin = '0 auto';
     
     // Apply lyrics fade effect
     const lyricsFade = parseInt(elements.lyricsFade.value);
@@ -1577,6 +1621,7 @@ function syncVerticalContent() {
 
 function syncVerticalLyrics() {
     const vLyricsContainer = document.getElementById('vLyricsContainer');
+    const vLyricsPanel = document.getElementById('vLyricsPanel');
     if (!vLyricsContainer) return;
     
     // Clone lyrics from horizontal mode
@@ -1590,6 +1635,14 @@ function syncVerticalLyrics() {
     const translationGray = elements.translationGray.value;
     const lyricsFont = elements.lyricsFont.value;
     const translationFont = elements.translationFont.value;
+    const lyricsLineGap = elements.lyricsLineGap.value + 'px';
+    const lyricsWidth = elements.lyricsWidth.value + '%';
+    
+    // Apply width and center
+    vLyricsContainer.style.width = lyricsWidth;
+    vLyricsContainer.style.margin = '0 auto';
+    vLyricsContainer.style.gap = lyricsLineGap;
+    vLyricsContainer.style.padding = '150px 0';
     
     vLyricsContainer.querySelectorAll('.lyric-text').forEach(el => {
         el.style.fontSize = lyricsFontSize;
@@ -1934,13 +1987,17 @@ function saveSettings() {
         lyricsFontSize: elements.lyricsFontSize.value,
         translationFontSize: elements.translationFontSize.value,
         reviewFontSize: elements.reviewFontSize.value,
+        reviewMetaFontSize: elements.reviewMetaFontSize.value,
         lyricsLineGap: elements.lyricsLineGap.value,
         lyricsHeight: elements.lyricsHeight.value,
+        lyricsWidth: elements.lyricsWidth.value,
         lyricsFade: elements.lyricsFade.value,
         reviewBoxWidth: elements.reviewBoxWidth.value,
         reviewBoxHeight: elements.reviewBoxHeight.value,
         reviewBgOpacity: elements.reviewBgOpacity.value,
         borderRadius: elements.borderRadius.value,
+        progressBarHeight: elements.progressBarHeight.value,
+        progressTimeFontSize: elements.progressTimeFontSize.value,
         blurStrength: elements.blurStrength.value,
         // Gray scale settings
         titleGray: elements.titleGray.value,
@@ -1989,6 +2046,127 @@ function saveSettings() {
     localStorage.setItem('musicSummarySettings_common', JSON.stringify(commonSettings));
 }
 
+// Default settings for different modes
+function getDefaultSettings(layout, theme) {
+    if (layout === 'horizontal') {
+        const base = {
+            coverSize: '1200',
+            titleArtistGap: '32',
+            metadataCoverGap: '70',
+            coverProgressGap: '150',
+            titleFontSize: '72',
+            artistFontSize: '60',
+            lyricsFontSize: '72',
+            translationFontSize: '48',
+            reviewFontSize: '54',
+            reviewMetaFontSize: '28',
+            lyricsLineGap: '50',
+            lyricsHeight: '55',
+            lyricsWidth: '100',
+            lyricsFade: '50',
+            reviewBoxWidth: '95',
+            reviewBoxHeight: '600',
+            reviewBgOpacity: '15',
+            borderRadius: '48',
+            progressBarHeight: '12',
+            progressTimeFontSize: '32',
+            blurStrength: '90',
+            metadataAlign: 'center',
+            lyricsAlign: 'left',
+            metadataX: '0',
+            metadataY: '110',
+            coverX: '0',
+            coverY: '130',
+            progressX: '0',
+            progressY: '130',
+            lyricsX: '0',
+            lyricsY: '40',
+            reviewX: '0',
+            reviewY: '40',
+            titleFont: 'Microsoft YaHei',
+            artistFont: 'Microsoft YaHei',
+            lyricsFont: 'Microsoft YaHei',
+            translationFont: 'Microsoft YaHei',
+            reviewFont: 'Ma Shan Zheng'
+        };
+        if (theme === 'light') {
+            return { ...base,
+                titleGray: '50',
+                artistGray: '90',
+                lyricsGray: '10',
+                translationGray: '90',
+                reviewGray: '50'
+            };
+        } else {
+            return { ...base,
+                titleGray: '255',
+                artistGray: '180',
+                lyricsGray: '255',
+                translationGray: '180',
+                reviewGray: '220'
+            };
+        }
+    } else {
+        // Vertical mode
+        const base = {
+            coverSize: '1600',
+            titleArtistGap: '32',
+            metadataCoverGap: '120',
+            coverProgressGap: '150',
+            titleFontSize: '100',
+            artistFontSize: '80',
+            lyricsFontSize: '72',
+            translationFontSize: '48',
+            reviewFontSize: '54',
+            reviewMetaFontSize: '28',
+            lyricsLineGap: '40',
+            lyricsHeight: '60',
+            lyricsWidth: '100',
+            lyricsFade: '50',
+            reviewBoxWidth: '85',
+            reviewBoxHeight: '700',
+            reviewBgOpacity: '15',
+            borderRadius: '48',
+            progressBarHeight: '24',
+            progressTimeFontSize: '40',
+            blurStrength: '90',
+            metadataAlign: 'center',
+            lyricsAlign: 'center',
+            metadataX: '0',
+            metadataY: '30',
+            coverX: '0',
+            coverY: '30',
+            progressX: '0',
+            progressY: '-130',
+            lyricsX: '0',
+            lyricsY: '-220',
+            reviewX: '0',
+            reviewY: '-60',
+            titleFont: 'Microsoft YaHei',
+            artistFont: 'Microsoft YaHei',
+            lyricsFont: 'Microsoft YaHei',
+            translationFont: 'Microsoft YaHei',
+            reviewFont: 'Ma Shan Zheng',
+            titleGray: '255',
+            artistGray: '180',
+            lyricsGray: '255',
+            translationGray: '180',
+            reviewGray: '220'
+        };
+        if (theme === 'light') {
+            return { ...base,
+                titleGray: '50',
+                artistGray: '90',
+                lyricsGray: '10',
+                translationGray: '90',
+                reviewGray: '50'
+            };
+        } else {
+            return base;
+        }
+    }
+}
+
 function loadSettings() {
     // First load common settings (layout and theme)
     const commonSaved = localStorage.getItem('musicSummarySettings_common');
@@ -2012,10 +2190,12 @@ function loadSettings() {
 
 function loadLayoutSettings() {
     const saved = localStorage.getItem(getSettingsStorageKey());
-    if (!saved) return;
+    
+    // Use default settings if no saved settings exist
+    const defaults = getDefaultSettings(currentLayout, currentTheme);
+    const settings = saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
     
     try {
-        const settings = JSON.parse(saved);
         
         // Apply slider values
         if (settings.coverSize) elements.coverSize.value = settings.coverSize;
@@ -2029,12 +2209,16 @@ function loadLayoutSettings() {
         if (settings.reviewFontSize) elements.reviewFontSize.value = settings.reviewFontSize;
         if (settings.lyricsLineGap) elements.lyricsLineGap.value = settings.lyricsLineGap;
         if (settings.lyricsHeight) elements.lyricsHeight.value = settings.lyricsHeight;
+        if (settings.lyricsWidth) elements.lyricsWidth.value = settings.lyricsWidth;
         if (settings.lyricsFade) elements.lyricsFade.value = settings.lyricsFade;
         if (settings.reviewBoxWidth) elements.reviewBoxWidth.value = settings.reviewBoxWidth;
         if (settings.reviewBoxHeight) elements.reviewBoxHeight.value = settings.reviewBoxHeight;
         if (settings.reviewBgOpacity) elements.reviewBgOpacity.value = settings.reviewBgOpacity;
         if (settings.borderRadius) elements.borderRadius.value = settings.borderRadius;
         if (settings.blurStrength) elements.blurStrength.value = settings.blurStrength;
+        if (settings.progressBarHeight) elements.progressBarHeight.value = settings.progressBarHeight;
+        if (settings.progressTimeFontSize) elements.progressTimeFontSize.value = settings.progressTimeFontSize;
+        if (settings.reviewMetaFontSize) elements.reviewMetaFontSize.value = settings.reviewMetaFontSize;
         
         // Gray scale settings
         if (settings.titleGray) elements.titleGray.value = settings.titleGray;

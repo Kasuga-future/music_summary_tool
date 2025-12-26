@@ -1050,10 +1050,15 @@ htmlbody {
     text-align: center;
 }
 
+.lyrics-module .v-lyrics-container {
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-out;
+}
+
 .lyrics-module .v-lyrics-container .lyrics-lines {
     display: flex;
     flex-direction: column;
-    gap: 20px;
 }
 
 .lyrics-module .v-lyrics-container .lyric-line {
@@ -1096,20 +1101,32 @@ htmlbody {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 30px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .review-module .v-review-panel .review-text {
     font-size: 48px;
     line-height: 1.8;
-    margin-bottom: 60px;
+    flex: 1;
 }
 
 .review-module .v-review-panel .review-meta {
     display: flex;
-    justify-content: flex-end;
-    gap: 40px;
+    justify-content: space-between;
+    align-items: center;
     font-size: 36px;
     opacity: 0.7;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .review-module .v-review-panel .review-meta {
+    border-top-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Hide modules based on state */
