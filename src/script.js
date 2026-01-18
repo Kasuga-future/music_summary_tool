@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateElementPositions();
     updateAlignment();
     initializeScrollNav();
+    initializeTimeInputs();
     
     window.addEventListener('resize', updatePreviewScale);
 });
@@ -81,6 +82,8 @@ function initializeElements() {
     elements.progressSlider = document.getElementById('progressSlider');
     elements.currentTime = document.getElementById('currentTime');
     elements.totalTime = document.getElementById('totalTime');
+    elements.totalTimeInput = document.getElementById('totalTimeInput');
+    elements.currentTimeInput = document.getElementById('currentTimeInput');
     
     elements.reviewContent = document.getElementById('reviewContent');
     elements.reviewAuthor = document.getElementById('reviewAuthor');
@@ -360,6 +363,9 @@ function initializeEventListeners() {
     elements.reviewAuthor.addEventListener('input', updateReviewDisplay);
     elements.reviewDate.addEventListener('input', updateReviewDisplay);
     
+    // Allow Tab key to insert spaces in review textarea
+    elements.reviewContent.addEventListener('keydown', handleReviewTextareaKeydown);
+    
     // Checkbox inputs
     elements.showLyrics.addEventListener('change', updateVisibility);
     elements.showTranslation.addEventListener('change', updateLyrics);
@@ -370,6 +376,12 @@ function initializeEventListeners() {
     
     // Progress slider
     elements.progressSlider.addEventListener('input', updateProgress);
+    
+    // Time input fields
+    elements.totalTimeInput.addEventListener('input', handleTotalTimeInput);
+    elements.totalTimeInput.addEventListener('blur', handleTotalTimeInput);
+    elements.currentTimeInput.addEventListener('input', handleCurrentTimeInput);
+    elements.currentTimeInput.addEventListener('blur', handleCurrentTimeInput);
     
     // Style sliders
     elements.coverSize.addEventListener('input', updateStyles);
@@ -811,6 +823,273 @@ function applyLyricsStyles() {
     });
 }
 
+/**
+ * Detect the script/language type of a character
+ * Returns: 'hiragana', 'katakana', 'cjk', 'latin', 'other'
+ */
+function getCharType(char) {
+    const code = char.charCodeAt(0);
+    // Hiragana: U+3040 - U+309F
+    if (code >= 0x3040 && code <= 0x309F) return 'hiragana';
+    // Katakana: U+30A0 - U+30FF
+    if (code >= 0x30A0 && code <= 0x30FF) return 'katakana';
+    // Katakana extended: U+31F0 - U+31FF
+    if (code >= 0x31F0 && code <= 0x31FF) return 'katakana';
+    // Half-width Katakana: U+FF65 - U+FF9F
+    if (code >= 0xFF65 && code <= 0xFF9F) return 'katakana';
+    // CJK Unified Ideographs (Chinese/Japanese Kanji/Korean Hanja)
+    if (code >= 0x4E00 && code <= 0x9FFF) return 'cjk';
+    // CJK Extension A
+    if (code >= 0x3400 && code <= 0x4DBF) return 'cjk';
+    // Korean Hangul
+    if (code >= 0xAC00 && code <= 0xD7AF) return 'korean';
+    // Korean Jamo
+    if (code >= 0x1100 && code <= 0x11FF) return 'korean';
+    // Latin letters (basic + extended)
+    if ((code >= 0x0041 && code <= 0x005A) || // A-Z
+        (code >= 0x0061 && code <= 0x007A) || // a-z
+        (code >= 0x00C0 && code <= 0x00FF) || // Latin Extended
+        (code >= 0x0100 && code <= 0x017F)) { // Latin Extended-A
+        return 'latin';
+    }
+    // Space
+    if (char === ' ' || char === '　') return 'space';
+    // Numbers
+    if (code >= 0x0030 && code <= 0x0039) return 'number';
+    // Full-width numbers
+    if (code >= 0xFF10 && code <= 0xFF19) return 'number';
+    
+    return 'other';
+}
+
+/**
+ * Analyze the dominant script type of a text segment
+ */
+function analyzeTextScript(text) {
+    const counts = { hiragana: 0, katakana: 0, cjk: 0, latin: 0, korean: 0 };
+    for (const char of text) {
+        const type = getCharType(char);
+        if (counts.hasOwnProperty(type)) {
+            counts[type]++;
+        }
+    }
+    
+    // Japanese: has hiragana or katakana
+    const hasJapanese = counts.hiragana > 0 || counts.katakana > 0;
+    // Pure CJK (Chinese): only CJK characters, no kana
+    const isPureChinese = counts.cjk > 0 && !hasJapanese && counts.korean === 0;
+    // Has Latin
+    const hasLatin = counts.latin > 0;
+    // Korean
+    const hasKorean = counts.korean > 0;
+    
+    return {
+        hasJapanese,
+        isPureChinese,
+        hasLatin,
+        hasKorean,
+        counts
+    };
+}
+
+/**
+ * Try to find the split point between original lyrics and translation
+ * based on script type changes
+ */
+function findScriptSplitPoint(text) {
+    if (!text || text.length < 4) return -1;
+    
+    const chars = [...text]; // Handle multi-byte characters correctly
+    const types = chars.map(c => getCharType(c));
+    
+    // Look for transition points where the script type changes significantly
+    // Common patterns:
+    // - Japanese (kana + kanji) -> Chinese (pure kanji)
+    // - Japanese/Chinese -> Latin (romaji)
+    // - Latin -> Chinese/Japanese
+    
+    let lastNonSpaceType = null;
+    let lastNonSpaceIndex = -1;
+    let potentialSplitPoints = [];
+    
+    for (let i = 0; i < types.length; i++) {
+        const type = types[i];
+        if (type === 'space' || type === 'other' || type === 'number') continue;
+        
+        if (lastNonSpaceType !== null && lastNonSpaceType !== type) {
+            // Check if this is a significant transition
+            const isSignificantTransition = 
+                // Kana to pure CJK (Japanese -> Chinese translation)
+                ((lastNonSpaceType === 'hiragana' || lastNonSpaceType === 'katakana') && type === 'cjk') ||
+                // CJK to Kana might indicate mixed, check previous context
+                (lastNonSpaceType === 'cjk' && (type === 'hiragana' || type === 'katakana')) ||
+                // Latin to CJK (English -> Chinese/Japanese)
+                (lastNonSpaceType === 'latin' && (type === 'cjk' || type === 'hiragana' || type === 'katakana')) ||
+                // CJK/Kana to Latin (for romaji translations)
+                ((lastNonSpaceType === 'cjk' || lastNonSpaceType === 'hiragana' || lastNonSpaceType === 'katakana') && type === 'latin') ||
+                // Korean transitions
+                (lastNonSpaceType === 'korean' && type !== 'korean') ||
+                (lastNonSpaceType !== 'korean' && type === 'korean');
+            
+            if (isSignificantTransition) {
+                // Find the space before this transition
+                for (let j = i - 1; j >= lastNonSpaceIndex; j--) {
+                    if (types[j] === 'space') {
+                        potentialSplitPoints.push({
+                            index: j,
+                            from: lastNonSpaceType,
+                            to: type
+                        });
+                        break;
+                    }
+                }
+            }
+        }
+        
+        lastNonSpaceType = type;
+        lastNonSpaceIndex = i;
+    }
+    
+    if (potentialSplitPoints.length === 0) return -1;
+    
+    // Prefer splits that are more likely to be translation boundaries
+    // Prioritize: Japanese->Chinese, English->Chinese, Japanese->Latin
+    for (const point of potentialSplitPoints) {
+        const { from, to } = point;
+        // Japanese (kana) followed by pure CJK section likely means Chinese translation
+        if ((from === 'hiragana' || from === 'katakana') && to === 'cjk') {
+            // Verify the rest is mostly CJK (Chinese translation)
+            const restText = text.substring(point.index + 1);
+            const restAnalysis = analyzeTextScript(restText);
+            if (restAnalysis.isPureChinese) {
+                return point.index;
+            }
+        }
+        // Latin to CJK
+        if (from === 'latin' && to === 'cjk') {
+            return point.index;
+        }
+    }
+    
+    // If no clear pattern, use the first significant split point
+    // But only if both parts have reasonable length
+    for (const point of potentialSplitPoints) {
+        const beforeLen = text.substring(0, point.index).trim().length;
+        const afterLen = text.substring(point.index + 1).trim().length;
+        if (beforeLen >= 2 && afterLen >= 2) {
+            return point.index;
+        }
+    }
+    
+    return -1;
+}
+
+/**
+ * Split lyric text into original and translation
+ * Supports multiple formats:
+ * - "原文/翻译" or "原文//翻译"
+ * - "原文｜翻译" or "原文|翻译"
+ * - "原文（翻译）" or "原文(翻译)"
+ * - "原文「翻译」"
+ * - "原文【翻译】"
+ * - Smart detection: "日本語歌詞 中文翻译" (space-separated, different scripts)
+ */
+function splitLyricAndTranslation(text) {
+    if (!text) return { original: '', translation: '' };
+    
+    // Pattern 1: Separated by // or /
+    // Use // first to avoid splitting on single / in lyrics
+    if (text.includes('//')) {
+        const parts = text.split('//');
+        if (parts.length >= 2) {
+            return { 
+                original: parts[0].trim(), 
+                translation: parts.slice(1).join('//').trim() 
+            };
+        }
+    }
+    
+    // Pattern 2: Separated by | or ｜ (fullwidth)
+    const pipeMatch = text.match(/^(.+?)[|｜](.+)$/);
+    if (pipeMatch) {
+        return { 
+            original: pipeMatch[1].trim(), 
+            translation: pipeMatch[2].trim() 
+        };
+    }
+    
+    // Pattern 3: Translation in parentheses at the end （）or ()
+    // Match Chinese parentheses
+    const cnParenMatch = text.match(/^(.+?)（([^）]+)）\s*$/);
+    if (cnParenMatch) {
+        return { 
+            original: cnParenMatch[1].trim(), 
+            translation: cnParenMatch[2].trim() 
+        };
+    }
+    // Match English parentheses at end
+    const enParenMatch = text.match(/^(.+?)\(([^)]+)\)\s*$/);
+    if (enParenMatch) {
+        // Check if the content in parentheses looks like translation (contains CJK or is longer)
+        const parenContent = enParenMatch[2].trim();
+        const mainContent = enParenMatch[1].trim();
+        // If parentheses content contains Chinese/Japanese/Korean, it's likely translation
+        if (/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(parenContent) ||
+            /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(mainContent)) {
+            return { 
+                original: mainContent, 
+                translation: parenContent 
+            };
+        }
+    }
+    
+    // Pattern 4: Translation in 「」
+    const jpBracketMatch = text.match(/^(.+?)「([^」]+)」\s*$/);
+    if (jpBracketMatch) {
+        return { 
+            original: jpBracketMatch[1].trim(), 
+            translation: jpBracketMatch[2].trim() 
+        };
+    }
+    
+    // Pattern 5: Translation in 【】
+    const cnBracketMatch = text.match(/^(.+?)【([^】]+)】\s*$/);
+    if (cnBracketMatch) {
+        return { 
+            original: cnBracketMatch[1].trim(), 
+            translation: cnBracketMatch[2].trim() 
+        };
+    }
+    
+    // Pattern 6: Single / separator (be careful with this one)
+    // Only use if the text doesn't look like a path and has substantial content on both sides
+    const slashParts = text.split('/');
+    if (slashParts.length === 2) {
+        const left = slashParts[0].trim();
+        const right = slashParts[1].trim();
+        // Both parts should have some content and one should contain CJK characters
+        if (left.length >= 2 && right.length >= 2 &&
+            (/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(left) ||
+             /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(right))) {
+            return { original: left, translation: right };
+        }
+    }
+    
+    // Pattern 7: Smart script-based detection for space-separated lyrics
+    // e.g., "きみのことが好きだよ 我喜欢你" or "I love you 我爱你"
+    const splitIndex = findScriptSplitPoint(text);
+    if (splitIndex > 0) {
+        const original = text.substring(0, splitIndex).trim();
+        const translation = text.substring(splitIndex + 1).trim();
+        if (original.length >= 2 && translation.length >= 2) {
+            return { original, translation };
+        }
+    }
+    
+    // No translation found
+    return { original: text, translation: '' };
+}
+
 function parseLyrics(lyricsText) {
     const lines = lyricsText.split('\n');
     const lyrics = [];
@@ -825,14 +1104,18 @@ function parseLyrics(lyricsText) {
             const seconds = parseInt(timeMatch[2]);
             const ms = timeMatch[3] ? parseInt(timeMatch[3].padEnd(3, '0')) : 0;
             const time = minutes * 60 + seconds + ms / 1000;
-            const text = timeMatch[4].trim();
+            const rawText = timeMatch[4].trim();
             
-            if (text) {
-                // Check if this is a translation (follows a lyric closely)
+            if (rawText) {
+                // Try to split original and translation from the same line
+                const { original, translation } = splitLyricAndTranslation(rawText);
+                
+                // Check if this is a translation line (follows a lyric closely with same timestamp)
                 if (currentLyric && Math.abs(currentLyric.time - time) < 0.5 && !currentLyric.translation) {
-                    currentLyric.translation = text;
+                    // This line has same timestamp, treat entire text as translation
+                    currentLyric.translation = rawText;
                 } else {
-                    currentLyric = { time, text, translation: '' };
+                    currentLyric = { time, text: original, translation: translation };
                     lyrics.push(currentLyric);
                 }
             }
@@ -875,6 +1158,28 @@ function renderLyricsHTML(lyrics, currentTime, showTranslation) {
     return html;
 }
 
+/**
+ * Handle Tab key in review textarea to insert spaces instead of switching focus
+ */
+function handleReviewTextareaKeydown(e) {
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        const textarea = e.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const spaces = '    '; // 4 spaces for indent
+        
+        // Insert spaces at cursor position
+        textarea.value = textarea.value.substring(0, start) + spaces + textarea.value.substring(end);
+        
+        // Move cursor after the inserted spaces
+        textarea.selectionStart = textarea.selectionEnd = start + spaces.length;
+        
+        // Trigger input event to update display
+        updateReviewDisplay();
+    }
+}
+
 function updateReviewDisplay() {
     const content = elements.reviewContent.value || '在这里输入您对这首歌曲的评价...';
     const author = elements.reviewAuthor.value || '署名';
@@ -893,6 +1198,70 @@ function updateReviewDisplay() {
     if (vReviewDate) vReviewDate.textContent = date;
 }
 
+/**
+ * Initialize time inputs with default values
+ */
+function initializeTimeInputs() {
+    // Parse total time from input field
+    const totalTimeStr = elements.totalTimeInput.value || '3:25';
+    totalDuration = parseTimeToSeconds(totalTimeStr);
+    
+    // Set current time based on slider position
+    const progress = elements.progressSlider.value / 100;
+    const currentSeconds = Math.floor(progress * totalDuration);
+    elements.currentTimeInput.value = formatTime(currentSeconds);
+    
+    updateTimeDisplay();
+}
+
+/**
+ * Parse time string (m:ss or mm:ss) to seconds
+ */
+function parseTimeToSeconds(timeStr) {
+    if (!timeStr) return 0;
+    const parts = timeStr.trim().split(':');
+    if (parts.length === 2) {
+        const mins = parseInt(parts[0], 10) || 0;
+        const secs = parseInt(parts[1], 10) || 0;
+        return mins * 60 + secs;
+    } else if (parts.length === 1) {
+        // Just seconds
+        return parseInt(parts[0], 10) || 0;
+    }
+    return 0;
+}
+
+/**
+ * Handle total time input change
+ */
+function handleTotalTimeInput() {
+    const timeStr = elements.totalTimeInput.value;
+    const seconds = parseTimeToSeconds(timeStr);
+    if (seconds > 0) {
+        totalDuration = seconds;
+        // Recalculate current time input based on slider
+        const progress = elements.progressSlider.value / 100;
+        const currentSeconds = Math.floor(progress * totalDuration);
+        elements.currentTimeInput.value = formatTime(currentSeconds);
+        updateTimeDisplay();
+        updateLyrics();
+    }
+}
+
+/**
+ * Handle current time input change
+ */
+function handleCurrentTimeInput() {
+    const timeStr = elements.currentTimeInput.value;
+    const currentSeconds = parseTimeToSeconds(timeStr);
+    if (totalDuration > 0) {
+        // Calculate progress percentage
+        const progress = Math.min(100, Math.max(0, (currentSeconds / totalDuration) * 100));
+        elements.progressSlider.value = progress;
+        updateProgress();
+    }
+}
+
 function updateProgress() {
     const progress = elements.progressSlider.value;
     
@@ -903,8 +1272,12 @@ function updateProgress() {
     const vProgressFill = document.getElementById('vProgressBarFill');
     if (vProgressFill) vProgressFill.style.width = `${progress}%`;
     
-    // Update time display
+    // Update time display and current time input
     updateTimeDisplay();
+    
+    // Update current time input field
+    const currentSeconds = Math.floor((progress / 100) * totalDuration);
+    elements.currentTimeInput.value = formatTime(currentSeconds);
     
     // Update lyrics position
     updateLyrics();

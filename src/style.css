@@ -717,6 +717,9 @@ htmlbody {
     line-height: 1.8;
     font-family: 'Ma Shan Zheng', 'KaiTi', 'STKaiti', serif;
     flex: 1;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .review-meta {
@@ -1112,6 +1115,9 @@ htmlbody {
     font-size: 48px;
     line-height: 1.8;
     flex: 1;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .review-module .v-review-panel .review-meta {
