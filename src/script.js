@@ -526,6 +526,225 @@ function resetAllMetadata() {
     updateProgress();
 }
 
+/**
+ * Extract lyrics from audio file metadata - supports multiple formats
+ * 
+ * Supported formats:
+ * - MP3 (ID3v2): USLT, SYLT, lyrics, TXXX
+ * - FLAC: LYRICS, UNSYNCEDLYRICS (Vorbis Comments)
+ * - M4A/MP4: ©lyr (iTunes lyrics tag)
+ * - OGG: LYRICS, UNSYNCEDLYRICS (Vorbis Comments)
+ * - Various other proprietary fields
+ */
+function extractLyricsFromTags(tags) {
+    console.log('Attempting to extract lyrics from tags...');
+    console.log('All available tags:', Object.keys(tags));
+    
+    // ============================================
+    // FLAC / OGG / Vorbis Comments format
+    // ============================================
+    
+    // FLAC/OGG commonly use these field names (case-insensitive in Vorbis)
+    const vorbisLyricsFields = [
+        'LYRICS', 'lyrics', 'Lyrics',
+        'UNSYNCEDLYRICS', 'unsyncedlyrics', 'UNSYNCED LYRICS',
+        'SYNCEDLYRICS', 'syncedlyrics',
+        'LYRIC', 'lyric', 'Lyric'
+    ];
+    
+    for (const field of vorbisLyricsFields) {
+        if (tags[field]) {
+            console.log(`Found Vorbis lyrics field: ${field}`, typeof tags[field]);
+            const value = tags[field];
+            if (typeof value === 'string' && value.length > 0) {
+                return value;
+            }
+            if (value && value.data && typeof value.data === 'string') {
+                return value.data;
+            }
+        }
+    }
+    
+    // ============================================
+    // M4A / MP4 / iTunes format
+    // ============================================
+    
+    // iTunes/M4A uses ©lyr or various other fields
+    const itunesLyricsFields = [
+        '©lyr', '\u00A9lyr', 'lyr', 
+        '----:com.apple.iTunes:LYRICS',
+        '----:com.apple.iTunes:lyrics',
+        'aART', // sometimes misused
+    ];
+    
+    for (const field of itunesLyricsFields) {
+        if (tags[field]) {
+            console.log(`Found iTunes lyrics field: ${field}`, typeof tags[field]);
+            const value = tags[field];
+            if (typeof value === 'string' && value.length > 0) {
+                return value;
+            }
+            if (value && value.data && typeof value.data === 'string') {
+                return value.data;
+            }
+            if (Array.isArray(value) && value.length > 0) {
+                return value[0];
+            }
+        }
+    }
+    
+    // ============================================
+    // MP3 / ID3v2 format
+    // ============================================
+    
+    // Method 1: USLT tag (most common for ID3v2)
+    // Can be tags.USLT or tags.USLT as array or object
+    if (tags.USLT) {
+        console.log('Found USLT tag:', tags.USLT);
+        // USLT might be an object with data property
+        if (tags.USLT.data && tags.USLT.data.lyrics) {
+            return tags.USLT.data.lyrics;
+        }
+        // Or directly contain lyrics
+        if (tags.USLT.lyrics) {
+            return tags.USLT.lyrics;
+        }
+        // Or be a string directly
+        if (typeof tags.USLT === 'string') {
+            return tags.USLT;
+        }
+        // Or be an array of USLT frames
+        if (Array.isArray(tags.USLT) && tags.USLT.length > 0) {
+            const firstLyric = tags.USLT[0];
+            if (firstLyric.data && firstLyric.data.lyrics) {
+                return firstLyric.data.lyrics;
+            }
+            if (firstLyric.lyrics) {
+                return firstLyric.lyrics;
+            }
+        }
+    }
+    
+    // Method 2: Generic lyrics field
+    if (tags.lyrics) {
+        console.log('Found lyrics tag:', tags.lyrics);
+        if (typeof tags.lyrics === 'string') {
+            return tags.lyrics;
+        }
+        if (tags.lyrics.lyrics) {
+            return tags.lyrics.lyrics;
+        }
+        if (tags.lyrics.data) {
+            return tags.lyrics.data;
+        }
+    }
+    
+    // Method 3: SYLT (Synchronized lyrics) - less common but possible
+    if (tags.SYLT) {
+        console.log('Found SYLT tag:', tags.SYLT);
+        // SYLT is usually more complex, try to extract text
+        if (tags.SYLT.data && Array.isArray(tags.SYLT.data)) {
+            // Convert synchronized lyrics to LRC format
+            const lines = tags.SYLT.data.map(item => {
+                if (item.text && item.timeStamp !== undefined) {
+                    const time = item.timeStamp / 1000; // ms to seconds
+                    const mins = Math.floor(time / 60);
+                    const secs = (time % 60).toFixed(2);
+                    return `[${mins}:${secs.padStart(5, '0')}]${item.text}`;
+                }
+                return item.text || '';
+            });
+            return lines.join('\n');
+        }
+    }
+    
+    // Method 4: Check for TXXX frames (user-defined text)
+    if (tags.TXXX) {
+        console.log('Found TXXX tag:', tags.TXXX);
+        const txxx = Array.isArray(tags.TXXX) ? tags.TXXX : [tags.TXXX];
+        for (const frame of txxx) {
+            const desc = (frame.description || frame.id || '').toLowerCase();
+            if (desc.includes('lyric') || desc.includes('歌词')) {
+                return frame.data || frame.value || frame.text;
+            }
+        }
+    }
+    
+    // Method 5: Check common alternative field names
+    const altFields = ['unsyncedlyrics', 'unsynced lyrics', 'LYRICS', 'Lyrics', 
+                       'lyr', 'LYR', 'lyric', 'LYRIC', 'text', 'TEXT'];
+    for (const field of altFields) {
+        if (tags[field]) {
+            console.log(`Found alternative lyrics field: ${field}`, tags[field]);
+            if (typeof tags[field] === 'string') {
+                return tags[field];
+            }
+            if (tags[field].data) {
+                return tags[field].data;
+            }
+            if (tags[field].lyrics) {
+                return tags[field].lyrics;
+            }
+        }
+    }
+    
+    // Method 6: Scan all tags for anything that looks like lyrics
+    // Extended list of non-lyrics fields to skip
+    const skipFields = [
+        'title', 'artist', 'album', 'year', 'picture', 'genre', 'comment', 'track',
+        'APIC', 'TALB', 'TIT2', 'TPE1', 'TYER', 'TRCK', 'TCON', 'COMM', 'TPOS',
+        'TDRC', 'TSSE', 'TXXX', 'PRIV', 'WCOM', 'WOAR', 'WPUB',
+        // FLAC/Vorbis common fields
+        'ALBUMARTIST', 'TRACKNUMBER', 'DISCNUMBER', 'DATE', 'ENCODER',
+        'REPLAYGAIN_TRACK_GAIN', 'REPLAYGAIN_TRACK_PEAK',
+        // M4A/iTunes common fields  
+        '©nam', '©ART', '©alb', '©day', '©gen', 'covr', 'trkn', 'disk',
+        'cpil', 'pgap', '©too', 'tmpo', '©wrt', 'aART'
+    ];
+    
+    for (const key of Object.keys(tags)) {
+        const value = tags[key];
+        // Skip known non-lyrics fields (case-insensitive check)
+        if (skipFields.some(f => f.toLowerCase() === key.toLowerCase())) {
+            continue;
+        }
+        
+        // Check if value looks like lyrics (contains timestamps or multiple lines)
+        let textContent = null;
+        if (typeof value === 'string') {
+            textContent = value;
+        } else if (value && value.data && typeof value.data === 'string') {
+            textContent = value.data;
+        } else if (value && value.lyrics && typeof value.lyrics === 'string') {
+            textContent = value.lyrics;
+        } else if (value && typeof value === 'object') {
+            // Try to extract text from nested object
+            for (const subKey of ['text', 'value', 'content', 'lyrics', 'data']) {
+                if (value[subKey] && typeof value[subKey] === 'string') {
+                    textContent = value[subKey];
+                    break;
+                }
+            }
+        }
+        
+        if (textContent && textContent.length > 50) {
+            // Check if it looks like LRC format or has multiple lines
+            if (textContent.includes('[') && textContent.includes(']') && textContent.includes('\n')) {
+                console.log(`Found potential lyrics in field: ${key}`);
+                return textContent;
+            }
+            // Check if it has multiple lines (plain lyrics)
+            if ((textContent.match(/\n/g) || []).length >= 5) {
+                console.log(`Found potential plain lyrics in field: ${key}`);
+                return textContent;
+            }
+        }
+    }
+    
+    console.log('No lyrics found in any tag');
+    return null;
+}
+
 function handleAudioUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -534,6 +753,14 @@ function handleAudioUpload(e) {
     resetAllMetadata();
     
     elements.audioFileName.textContent = file.name;
+    
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    
+    // For WAV files, also try direct metadata extraction as jsmediatags has limited WAV support
+    if (fileExt === 'wav' || fileExt === 'wave') {
+        console.log('WAV file detected, trying direct metadata extraction...');
+        tryExtractWAVMetadata(file);
+    }
     
     // Parse ID3 tags using jsmediatags
     jsmediatags.read(file, {
@@ -585,13 +812,16 @@ function handleAudioUpload(e) {
                 generateDefaultCover();
             }
             
-            // Extract lyrics if available
-            if (tags.lyrics && tags.lyrics.lyrics) {
-                elements.lyricsInput.value = tags.lyrics.lyrics;
+            // Extract lyrics - try multiple possible tag formats
+            const extractedLyrics = extractLyricsFromTags(tags);
+            if (extractedLyrics) {
+                elements.lyricsInput.value = extractedLyrics;
                 updateLyrics();
-            } else if (tags.USLT && tags.USLT.data && tags.USLT.data.lyrics) {
-                elements.lyricsInput.value = tags.USLT.data.lyrics;
-                updateLyrics();
+                console.log('Lyrics extracted successfully');
+            } else {
+                console.log('No lyrics found in standard tags, trying raw file parsing...');
+                // Try raw file parsing as fallback for FLAC/M4A/etc
+                tryExtractLyricsFromRawFile(file);
             }
             
             updateDisplayText();
@@ -599,6 +829,8 @@ function handleAudioUpload(e) {
         onError: function(error) {
             console.log('Error reading ID3 tags:', error);
             generateDefaultCover();
+            // Still try to extract lyrics from raw file
+            tryExtractLyricsFromRawFile(file);
         }
     });
     
@@ -609,6 +841,886 @@ function handleAudioUpload(e) {
         totalDuration = audio.duration;
         updateTimeDisplay();
     });
+}
+
+/**
+ * Try to extract lyrics directly from raw file bytes
+ * This is a fallback method for FLAC, M4A, OGG, WAV when jsmediatags doesn't find lyrics
+ */
+function tryExtractLyricsFromRawFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const buffer = e.target.result;
+        const bytes = new Uint8Array(buffer);
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        
+        console.log(`Attempting raw extraction for ${fileExt} file...`);
+        
+        let lyrics = null;
+        let metadata = null;
+        
+        if (fileExt === 'flac') {
+            lyrics = extractLyricsFromFLAC(bytes);
+        } else if (fileExt === 'm4a' || fileExt === 'mp4' || fileExt === 'aac') {
+            lyrics = extractLyricsFromM4A(bytes);
+        } else if (fileExt === 'ogg' || fileExt === 'opus') {
+            lyrics = extractLyricsFromOGG(bytes);
+        } else if (fileExt === 'wav' || fileExt === 'wave') {
+            lyrics = extractLyricsFromWAV(bytes);
+            // Also try to extract metadata for WAV
+            metadata = extractWAVMetadata(bytes);
+        }
+        
+        // Apply extracted metadata
+        if (metadata) {
+            if (metadata.title && !elements.trackTitle.value) {
+                elements.trackTitle.value = metadata.title;
+                updateDisplayText();
+            }
+            if (metadata.artist && !elements.artistName.value) {
+                elements.artistName.value = metadata.artist;
+                updateDisplayText();
+            }
+        }
+        
+        if (lyrics) {
+            console.log('Raw extraction found lyrics!');
+            elements.lyricsInput.value = lyrics;
+            updateLyrics();
+        } else {
+            console.log('Raw extraction found no lyrics');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+/**
+ * Try to extract all metadata from WAV files when jsmediatags fails
+ * This is called separately for WAV files
+ * Handles: title, artist, cover art, lyrics, and non-ASCII characters (Chinese, Japanese, etc.)
+ */
+function tryExtractWAVMetadata(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const buffer = e.target.result;
+        const bytes = new Uint8Array(buffer);
+        
+        console.log('Extracting WAV metadata (enhanced)...');
+        
+        // Extract all metadata including cover
+        const result = extractWAVAllMetadata(bytes);
+        
+        if (result.title && !elements.trackTitle.value) {
+            elements.trackTitle.value = result.title;
+            console.log('WAV Title:', result.title);
+        }
+        if (result.artist && !elements.artistName.value) {
+            elements.artistName.value = result.artist;
+            console.log('WAV Artist:', result.artist);
+        }
+        
+        // Set cover image if found
+        if (result.coverData && result.coverMimeType) {
+            console.log('WAV Cover found, size:', result.coverData.length);
+            const coverUrl = `data:${result.coverMimeType};base64,${result.coverData}`;
+            setCoverImage(coverUrl);
+            elements.coverFileName.textContent = '从WAV提取';
+        }
+        
+        updateDisplayText();
+        
+        // Also try to get lyrics
+        if (result.lyrics && !elements.lyricsInput.value) {
+            elements.lyricsInput.value = result.lyrics;
+            updateLyrics();
+            console.log('WAV Lyrics found');
+        } else {
+            // Try generic search
+            const lyrics = extractLyricsFromWAV(bytes);
+            if (lyrics && !elements.lyricsInput.value) {
+                elements.lyricsInput.value = lyrics;
+                updateLyrics();
+            }
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+/**
+ * Extract all metadata from WAV file including cover art
+ * Supports multiple encodings for non-ASCII characters
+ */
+function extractWAVAllMetadata(bytes) {
+    const result = {
+        title: null,
+        artist: null,
+        album: null,
+        lyrics: null,
+        coverData: null,
+        coverMimeType: null
+    };
+    
+    // WAV files start with "RIFF"
+    if (bytes[0] !== 0x52 || bytes[1] !== 0x49 || bytes[2] !== 0x46 || bytes[3] !== 0x46) {
+        console.log('Not a valid RIFF/WAV file');
+        return result;
+    }
+    
+    console.log('Parsing WAV RIFF structure (enhanced)...');
+    
+    try {
+        // Parse RIFF structure
+        let offset = 12; // Skip "RIFF" + size + "WAVE"
+        
+        while (offset < bytes.length - 8) {
+            // Read chunk ID (4 bytes)
+            const chunkId = String.fromCharCode(bytes[offset], bytes[offset+1], bytes[offset+2], bytes[offset+3]);
+            // Read chunk size (4 bytes, little-endian)
+            const chunkSize = bytes[offset+4] | (bytes[offset+5] << 8) | (bytes[offset+6] << 16) | (bytes[offset+7] << 24);
+            
+            console.log(`WAV chunk: "${chunkId}", size: ${chunkSize}, offset: ${offset}`);
+            
+            if (chunkSize <= 0 || chunkSize > bytes.length - offset) {
+                console.log('Invalid chunk size, stopping parse');
+                break;
+            }
+            
+            if (chunkId === 'LIST') {
+                const listType = String.fromCharCode(bytes[offset+8], bytes[offset+9], bytes[offset+10], bytes[offset+11]);
+                console.log(`LIST type: ${listType}`);
+                
+                if (listType === 'INFO') {
+                    // Parse INFO sub-chunks with proper encoding
+                    parseWAVInfoChunk(bytes, offset + 12, offset + 8 + chunkSize, result);
+                }
+            } else if (chunkId === 'id3 ' || chunkId === 'ID3 ' || chunkId === 'ID3\x00') {
+                // Embedded ID3 tag
+                console.log('Found embedded ID3 chunk in WAV');
+                parseEmbeddedID3(bytes, offset + 8, chunkSize, result);
+            } else if (chunkId === 'data') {
+                // Audio data chunk - skip but note its position
+                console.log('Found audio data chunk');
+            }
+            
+            // Move to next chunk
+            offset += 8 + chunkSize + (chunkSize % 2);
+            
+            if (offset >= bytes.length) break;
+        }
+        
+        // Also check for ID3v2 tag at the end of file (some WAV files have this)
+        const id3v2EndOffset = findID3v2AtEnd(bytes);
+        if (id3v2EndOffset > 0) {
+            console.log('Found ID3v2 tag at end of WAV file');
+            parseEmbeddedID3(bytes, id3v2EndOffset, bytes.length - id3v2EndOffset, result);
+        }
+        
+    } catch (e) {
+        console.log('Error parsing WAV metadata:', e);
+    }
+    
+    console.log('WAV metadata result:', result);
+    return result;
+}
+
+/**
+ * Parse WAV INFO chunk with proper encoding support
+ */
+function parseWAVInfoChunk(bytes, startOffset, endOffset, result) {
+    let offset = startOffset;
+    
+    while (offset < endOffset - 8) {
+        const infoId = String.fromCharCode(bytes[offset], bytes[offset+1], bytes[offset+2], bytes[offset+3]);
+        const infoSize = bytes[offset+4] | (bytes[offset+5] << 8) | (bytes[offset+6] << 16) | (bytes[offset+7] << 24);
+        
+        if (infoSize <= 0 || infoSize > 10000 || offset + 8 + infoSize > endOffset) {
+            break;
+        }
+        
+        // Extract the raw bytes
+        const valueBytes = bytes.slice(offset + 8, offset + 8 + infoSize);
+        
+        // Try to decode with multiple encodings
+        let value = decodeTextWithFallback(valueBytes);
+        
+        console.log(`INFO field "${infoId}": "${value}" (size: ${infoSize})`);
+        
+        if (value && value.length > 0) {
+            if (infoId === 'INAM') result.title = value;
+            else if (infoId === 'IART') result.artist = value;
+            else if (infoId === 'IPRD') result.album = value;
+            else if (infoId === 'ICMT' && value.length > 50) {
+                // Comment might contain lyrics
+                if (value.includes('[') && value.includes(']')) {
+                    result.lyrics = value;
+                }
+            }
+        }
+        
+        // Move to next sub-chunk (padded to even)
+        offset += 8 + infoSize + (infoSize % 2);
+    }
+}
+
+/**
+ * Decode text bytes with multiple encoding fallbacks
+ * Tries: UTF-8, UTF-16LE, GBK (Chinese), Shift-JIS (Japanese)
+ */
+/**
+ * Check if decoded text contains valid CJK/Japanese characters
+ */
+function hasValidCJKChars(text) {
+    // Check for Chinese, Japanese, Korean characters
+    const cjkPattern = /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/;
+    return cjkPattern.test(text);
+}
+
+/**
+ * Check if text is pure ASCII (basic Latin characters only)
+ */
+function isPureASCII(text) {
+    for (let i = 0; i < text.length; i++) {
+        if (text.charCodeAt(i) > 127) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Check if bytes are valid UTF-8 with high-byte characters
+ * Returns true if there are bytes > 127 that form valid UTF-8 sequences
+ */
+function hasHighBytesInData(bytes) {
+    for (let i = 0; i < bytes.length; i++) {
+        if (bytes[i] > 127) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Check if decoded text looks like valid readable text
+ */
+function isValidDecodedText(text) {
+    if (!text || text.length === 0) return false;
+    
+    // Count problematic characters (control chars, replacement chars, weird symbols)
+    let problemCount = 0;
+    let normalCount = 0;
+    
+    for (const char of text) {
+        const code = char.charCodeAt(0);
+        
+        // Replacement character
+        if (code === 0xFFFD) {
+            problemCount++;
+            continue;
+        }
+        
+        // Private use area (often indicates wrong encoding)
+        if (code >= 0xE000 && code <= 0xF8FF) {
+            problemCount++;
+            continue;
+        }
+        
+        // Control characters (except common ones like newline, tab)
+        if (code < 32 && code !== 9 && code !== 10 && code !== 13) {
+            problemCount++;
+            continue;
+        }
+        
+        // Valid printable character
+        if (code >= 32 || code === 9 || code === 10 || code === 13) {
+            normalCount++;
+        }
+    }
+    
+    // If more than 20% are problematic, consider it invalid
+    if (normalCount === 0) return false;
+    return (problemCount / (normalCount + problemCount)) < 0.2;
+}
+
+/**
+ * Score decoded text quality (higher is better)
+ * Only gives CJK bonus if the source bytes actually contain high bytes
+ */
+function scoreDecodedText(text, hasHighBytes = true) {
+    if (!text) return 0;
+    
+    let score = 0;
+    
+    // Only give CJK bonus if source data has high bytes (non-ASCII)
+    // This prevents ASCII text from being "upgraded" to CJK encodings
+    if (hasHighBytes && hasValidCJKChars(text)) {
+        score += 50;
+    }
+    
+    // Prefer text without replacement characters
+    const replacementCount = (text.match(/\uFFFD/g) || []).length;
+    score -= replacementCount * 10;
+    
+    // Prefer text without private use area characters
+    const privateUseCount = (text.match(/[\uE000-\uF8FF]/g) || []).length;
+    score -= privateUseCount * 5;
+    
+    // Prefer normal alphanumeric content
+    const normalChars = (text.match(/[\w\s\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g) || []).length;
+    score += normalChars;
+    
+    return score;
+}
+
+function decodeTextWithFallback(bytes) {
+    // Remove trailing null bytes
+    let end = bytes.length;
+    while (end > 0 && bytes[end - 1] === 0) end--;
+    if (end === 0) return '';
+    
+    const trimmedBytes = bytes.slice(0, end);
+    
+    // Check if data contains any high bytes (non-ASCII)
+    const hasHighBytes = hasHighBytesInData(trimmedBytes);
+    
+    // Check for BOM (Byte Order Mark)
+    if (trimmedBytes.length >= 2) {
+        // UTF-16 LE BOM
+        if (trimmedBytes[0] === 0xFF && trimmedBytes[1] === 0xFE) {
+            try {
+                const result = new TextDecoder('utf-16le').decode(trimmedBytes.slice(2));
+                if (isValidDecodedText(result)) return result.trim();
+            } catch (e) {}
+        }
+        // UTF-16 BE BOM
+        if (trimmedBytes[0] === 0xFE && trimmedBytes[1] === 0xFF) {
+            try {
+                const result = new TextDecoder('utf-16be').decode(trimmedBytes.slice(2));
+                if (isValidDecodedText(result)) return result.trim();
+            } catch (e) {}
+        }
+        // UTF-8 BOM
+        if (trimmedBytes.length >= 3 && trimmedBytes[0] === 0xEF && trimmedBytes[1] === 0xBB && trimmedBytes[2] === 0xBF) {
+            try {
+                const result = new TextDecoder('utf-8').decode(trimmedBytes.slice(3));
+                if (isValidDecodedText(result)) return result.trim();
+            } catch (e) {}
+        }
+    }
+    
+    // If data is pure ASCII (no high bytes), just use UTF-8 directly
+    // This prevents ASCII text like "Artist Name" from being mangled by GBK/Shift-JIS
+    if (!hasHighBytes) {
+        try {
+            const result = new TextDecoder('utf-8', { fatal: false }).decode(trimmedBytes);
+            if (isValidDecodedText(result)) {
+                return result.trim();
+            }
+        } catch (e) {}
+    }
+    
+    // Try UTF-8 first (strict mode)
+    try {
+        const result = new TextDecoder('utf-8', { fatal: true }).decode(trimmedBytes);
+        if (isValidDecodedText(result)) {
+            // If UTF-8 decoded successfully and result is pure ASCII, return immediately
+            if (isPureASCII(result)) {
+                return result.trim();
+            }
+            // Otherwise add to candidates
+        }
+    } catch (e) {
+        // UTF-8 strict failed, need to try other encodings
+    }
+    
+    // Collect all candidate decodings with scores
+    const candidates = [];
+    
+    // Try UTF-8 (non-strict for candidates)
+    try {
+        const result = new TextDecoder('utf-8', { fatal: false }).decode(trimmedBytes);
+        if (isValidDecodedText(result) && !result.includes('\uFFFD')) {
+            candidates.push({ encoding: 'utf-8', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) + 20 }); // bonus for UTF-8
+        }
+    } catch (e) {}
+    
+    // Only try CJK encodings if there are high bytes in the data
+    if (hasHighBytes) {
+        // Try GBK (Simplified Chinese - common in Chinese music files)
+        try {
+            const result = new TextDecoder('gbk', { fatal: false }).decode(trimmedBytes);
+            if (isValidDecodedText(result)) {
+                candidates.push({ encoding: 'gbk', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) });
+            }
+        } catch (e) {}
+        
+        // Try GB18030 (Extended Chinese)
+        try {
+            const result = new TextDecoder('gb18030', { fatal: false }).decode(trimmedBytes);
+            if (isValidDecodedText(result)) {
+                candidates.push({ encoding: 'gb18030', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) });
+            }
+        } catch (e) {}
+        
+        // Try Big5 (Traditional Chinese)
+        try {
+            const result = new TextDecoder('big5', { fatal: false }).decode(trimmedBytes);
+            if (isValidDecodedText(result)) {
+                candidates.push({ encoding: 'big5', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) });
+            }
+        } catch (e) {}
+        
+        // Try Shift-JIS (Japanese)
+        try {
+            const result = new TextDecoder('shift-jis', { fatal: false }).decode(trimmedBytes);
+            if (isValidDecodedText(result)) {
+                candidates.push({ encoding: 'shift-jis', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) });
+            }
+        } catch (e) {}
+        
+        // Try EUC-JP (Japanese)
+        try {
+            const result = new TextDecoder('euc-jp', { fatal: false }).decode(trimmedBytes);
+            if (isValidDecodedText(result)) {
+                candidates.push({ encoding: 'euc-jp', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) });
+            }
+        } catch (e) {}
+        
+        // Try EUC-KR (Korean)
+        try {
+            const result = new TextDecoder('euc-kr', { fatal: false }).decode(trimmedBytes);
+            if (isValidDecodedText(result)) {
+                candidates.push({ encoding: 'euc-kr', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) });
+            }
+        } catch (e) {}
+    }
+    
+    // Try UTF-16LE (Windows Unicode without BOM)
+    if (trimmedBytes.length % 2 === 0 && trimmedBytes.length >= 2) {
+        try {
+            const result = new TextDecoder('utf-16le', { fatal: false }).decode(trimmedBytes);
+            // UTF-16 decoded text should be roughly half the byte length
+            if (isValidDecodedText(result) && !result.includes('\u0000')) {
+                candidates.push({ encoding: 'utf-16le', text: result.trim(), score: scoreDecodedText(result, hasHighBytes) - 5 }); // slight penalty for guessing UTF-16
+            }
+        } catch (e) {}
+    }
+    
+    // Sort candidates by score and pick the best
+    if (candidates.length > 0) {
+        candidates.sort((a, b) => b.score - a.score);
+        console.log('Encoding candidates:', candidates.map(c => `${c.encoding}(${c.score})`).join(', '));
+        return candidates[0].text;
+    }
+    
+    // Fallback: UTF-8 with replacement characters
+    try {
+        const result = new TextDecoder('utf-8', { fatal: false }).decode(trimmedBytes);
+        return result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim();
+    } catch (e) {
+        return '';
+    }
+}
+
+/**
+ * Parse embedded ID3 tag in WAV file
+ */
+function parseEmbeddedID3(bytes, offset, size, result) {
+    try {
+        // Check for ID3 header
+        if (bytes[offset] !== 0x49 || bytes[offset+1] !== 0x44 || bytes[offset+2] !== 0x33) {
+            // Not an ID3 tag, try direct search
+            return;
+        }
+        
+        console.log('Parsing embedded ID3v2 tag...');
+        
+        // ID3v2 header: "ID3" + version (2 bytes) + flags (1 byte) + size (4 bytes syncsafe)
+        const version = bytes[offset + 3];
+        const revision = bytes[offset + 4];
+        console.log(`ID3v2.${version}.${revision}`);
+        
+        // Parse syncsafe size
+        const id3Size = ((bytes[offset + 6] & 0x7F) << 21) |
+                       ((bytes[offset + 7] & 0x7F) << 14) |
+                       ((bytes[offset + 8] & 0x7F) << 7) |
+                       (bytes[offset + 9] & 0x7F);
+        
+        console.log('ID3 tag size:', id3Size);
+        
+        // Search for APIC frame (album art)
+        const apicOffset = findInBytes(bytes, [0x41, 0x50, 0x49, 0x43], offset, offset + Math.min(size, id3Size + 10));
+        if (apicOffset > 0) {
+            console.log('Found APIC frame at:', apicOffset);
+            extractAPICFrame(bytes, apicOffset, result);
+        }
+        
+        // Search for USLT frame (lyrics)
+        const usltOffset = findInBytes(bytes, [0x55, 0x53, 0x4C, 0x54], offset, offset + Math.min(size, id3Size + 10));
+        if (usltOffset > 0 && !result.lyrics) {
+            console.log('Found USLT frame at:', usltOffset);
+            extractUSLTFrame(bytes, usltOffset, result);
+        }
+        
+        // Search for TIT2 (title) if not found yet
+        if (!result.title) {
+            const tit2Offset = findInBytes(bytes, [0x54, 0x49, 0x54, 0x32], offset, offset + Math.min(size, id3Size + 10));
+            if (tit2Offset > 0) {
+                extractTextFrame(bytes, tit2Offset, 'title', result);
+            }
+        }
+        
+        // Search for TPE1 (artist) if not found yet
+        if (!result.artist) {
+            const tpe1Offset = findInBytes(bytes, [0x54, 0x50, 0x45, 0x31], offset, offset + Math.min(size, id3Size + 10));
+            if (tpe1Offset > 0) {
+                extractTextFrame(bytes, tpe1Offset, 'artist', result);
+            }
+        }
+        
+    } catch (e) {
+        console.log('Error parsing embedded ID3:', e);
+    }
+}
+
+/**
+ * Find byte pattern in array
+ */
+function findInBytes(bytes, pattern, start, end) {
+    end = Math.min(end, bytes.length - pattern.length);
+    for (let i = start; i < end; i++) {
+        let found = true;
+        for (let j = 0; j < pattern.length; j++) {
+            if (bytes[i + j] !== pattern[j]) {
+                found = false;
+                break;
+            }
+        }
+        if (found) return i;
+    }
+    return -1;
+}
+
+/**
+ * Extract APIC (album art) frame from ID3v2
+ */
+function extractAPICFrame(bytes, offset, result) {
+    try {
+        // Frame header: ID (4) + size (4) + flags (2)
+        const frameSize = (bytes[offset + 4] << 24) | (bytes[offset + 5] << 16) | 
+                         (bytes[offset + 6] << 8) | bytes[offset + 7];
+        
+        if (frameSize <= 0 || frameSize > 10 * 1024 * 1024) return; // Max 10MB
+        
+        let pos = offset + 10; // Skip header
+        
+        // Text encoding byte
+        const encoding = bytes[pos++];
+        
+        // MIME type (null-terminated)
+        let mimeType = '';
+        while (pos < bytes.length && bytes[pos] !== 0) {
+            mimeType += String.fromCharCode(bytes[pos++]);
+        }
+        pos++; // Skip null
+        
+        // Picture type
+        const pictureType = bytes[pos++];
+        
+        // Description (null-terminated, encoding depends on first byte)
+        while (pos < bytes.length && bytes[pos] !== 0) {
+            pos++;
+        }
+        pos++; // Skip null
+        if (encoding === 1 || encoding === 2) pos++; // UTF-16 has double null
+        
+        // Image data
+        const imageEnd = offset + 10 + frameSize;
+        if (pos < imageEnd && imageEnd <= bytes.length) {
+            const imageData = bytes.slice(pos, imageEnd);
+            
+            // Detect image type
+            let detectedMime = mimeType;
+            if (imageData[0] === 0xFF && imageData[1] === 0xD8) {
+                detectedMime = 'image/jpeg';
+            } else if (imageData[0] === 0x89 && imageData[1] === 0x50) {
+                detectedMime = 'image/png';
+            }
+            
+            // Convert to base64
+            let base64 = '';
+            for (let i = 0; i < imageData.length; i++) {
+                base64 += String.fromCharCode(imageData[i]);
+            }
+            result.coverData = btoa(base64);
+            result.coverMimeType = detectedMime || 'image/jpeg';
+            
+            console.log('Extracted cover art:', detectedMime, imageData.length, 'bytes');
+        }
+    } catch (e) {
+        console.log('Error extracting APIC frame:', e);
+    }
+}
+
+/**
+ * Extract USLT (lyrics) frame from ID3v2
+ */
+function extractUSLTFrame(bytes, offset, result) {
+    try {
+        const frameSize = (bytes[offset + 4] << 24) | (bytes[offset + 5] << 16) | 
+                         (bytes[offset + 6] << 8) | bytes[offset + 7];
+        
+        if (frameSize <= 0 || frameSize > 1024 * 1024) return;
+        
+        let pos = offset + 10;
+        const encoding = bytes[pos++];
+        
+        // Language (3 bytes)
+        pos += 3;
+        
+        // Content descriptor (null-terminated)
+        while (pos < bytes.length && bytes[pos] !== 0) pos++;
+        pos++;
+        if (encoding === 1 || encoding === 2) {
+            while (pos < bytes.length && bytes[pos] !== 0) pos++;
+            pos++;
+        }
+        
+        // Lyrics
+        const lyricsEnd = offset + 10 + frameSize;
+        if (pos < lyricsEnd) {
+            const lyricsBytes = bytes.slice(pos, lyricsEnd);
+            result.lyrics = decodeID3Text(lyricsBytes, encoding);
+            console.log('Extracted lyrics, length:', result.lyrics.length);
+        }
+    } catch (e) {
+        console.log('Error extracting USLT frame:', e);
+    }
+}
+
+/**
+ * Extract text frame (TIT2, TPE1, etc.) from ID3v2
+ */
+function extractTextFrame(bytes, offset, field, result) {
+    try {
+        const frameSize = (bytes[offset + 4] << 24) | (bytes[offset + 5] << 16) | 
+                         (bytes[offset + 6] << 8) | bytes[offset + 7];
+        
+        if (frameSize <= 0 || frameSize > 10000) return;
+        
+        let pos = offset + 10;
+        const encoding = bytes[pos++];
+        
+        const textBytes = bytes.slice(pos, offset + 10 + frameSize);
+        const text = decodeID3Text(textBytes, encoding);
+        
+        if (text) {
+            result[field] = text;
+            console.log(`Extracted ${field}:`, text);
+        }
+    } catch (e) {
+        console.log('Error extracting text frame:', e);
+    }
+}
+
+/**
+ * Decode ID3v2 text based on encoding byte
+ */
+function decodeID3Text(bytes, encoding) {
+    try {
+        let decoder;
+        switch (encoding) {
+            case 0: // ISO-8859-1
+                decoder = new TextDecoder('iso-8859-1');
+                break;
+            case 1: // UTF-16 with BOM
+                if (bytes[0] === 0xFF && bytes[1] === 0xFE) {
+                    decoder = new TextDecoder('utf-16le');
+                    bytes = bytes.slice(2);
+                } else if (bytes[0] === 0xFE && bytes[1] === 0xFF) {
+                    decoder = new TextDecoder('utf-16be');
+                    bytes = bytes.slice(2);
+                } else {
+                    decoder = new TextDecoder('utf-16le');
+                }
+                break;
+            case 2: // UTF-16BE
+                decoder = new TextDecoder('utf-16be');
+                break;
+            case 3: // UTF-8
+                decoder = new TextDecoder('utf-8');
+                break;
+            default:
+                decoder = new TextDecoder('utf-8', { fatal: false });
+        }
+        return decoder.decode(bytes).replace(/\0+$/, '').trim();
+    } catch (e) {
+        return new TextDecoder('utf-8', { fatal: false }).decode(bytes).replace(/\0+$/, '').trim();
+    }
+}
+
+/**
+ * Find ID3v2 tag at end of file
+ */
+function findID3v2AtEnd(bytes) {
+    // Some WAV files have ID3v2 appended at the end
+    // Search backwards for "ID3" marker
+    const searchStart = Math.max(0, bytes.length - 1024 * 1024); // Last 1MB
+    for (let i = bytes.length - 10; i >= searchStart; i--) {
+        if (bytes[i] === 0x49 && bytes[i+1] === 0x44 && bytes[i+2] === 0x33) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * Extract lyrics from FLAC file (Vorbis Comments)
+ */
+function extractLyricsFromFLAC(bytes) {
+    // FLAC files start with "fLaC" magic number
+    if (bytes[0] !== 0x66 || bytes[1] !== 0x4C || bytes[2] !== 0x61 || bytes[3] !== 0x43) {
+        console.log('Not a valid FLAC file');
+        return null;
+    }
+    
+    // Search for LYRICS or UNSYNCEDLYRICS in Vorbis comment block
+    const searchPatterns = [
+        'LYRICS=', 'lyrics=', 'Lyrics=',
+        'UNSYNCEDLYRICS=', 'unsyncedlyrics=',
+        'UNSYNCED LYRICS=', 'unsynced lyrics='
+    ];
+    
+    return searchForLyricsPattern(bytes, searchPatterns);
+}
+
+/**
+ * Extract lyrics from M4A/MP4 file (iTunes tags)
+ */
+function extractLyricsFromM4A(bytes) {
+    // Search for ©lyr atom or lyrics in the file
+    const searchPatterns = [
+        '\u00A9lyr', '©lyr', 'lyr\0',
+        'LYRICS=', 'lyrics='
+    ];
+    
+    return searchForLyricsPattern(bytes, searchPatterns);
+}
+
+/**
+ * Extract lyrics from OGG file (Vorbis Comments)
+ */
+function extractLyricsFromOGG(bytes) {
+    // OGG files start with "OggS"
+    if (bytes[0] !== 0x4F || bytes[1] !== 0x67 || bytes[2] !== 0x67 || bytes[3] !== 0x53) {
+        console.log('Not a valid OGG file');
+        return null;
+    }
+    
+    const searchPatterns = [
+        'LYRICS=', 'lyrics=', 'Lyrics=',
+        'UNSYNCEDLYRICS=', 'unsyncedlyrics='
+    ];
+    
+    return searchForLyricsPattern(bytes, searchPatterns);
+}
+
+/**
+ * Extract lyrics from WAV file
+ * WAV files can contain metadata in:
+ * - LIST/INFO chunks (RIFF format)
+ * - ID3 tags (embedded at the end)
+ * - RIFF INFO fields
+ */
+function extractLyricsFromWAV(bytes) {
+    // WAV files start with "RIFF"
+    if (bytes[0] !== 0x52 || bytes[1] !== 0x49 || bytes[2] !== 0x46 || bytes[3] !== 0x46) {
+        console.log('Not a valid WAV/RIFF file');
+        return null;
+    }
+    
+    // Search for lyrics in various possible locations
+    const searchPatterns = [
+        'LYRICS=', 'lyrics=', 'Lyrics=',
+        'ILYRICS', // RIFF INFO lyrics tag
+        'USLT', // ID3 tag that might be embedded
+        'UNSYNCEDLYRICS=', 'unsyncedlyrics='
+    ];
+    
+    return searchForLyricsPattern(bytes, searchPatterns);
+}
+
+/**
+ * Extract all metadata from WAV file (title, artist, etc.)
+ * Returns an object with metadata fields
+ * 
+ * WAV/RIFF INFO chunk tags:
+ * - INAM: Title/Name
+ * - IART: Artist
+ * - IPRD: Album/Product
+/**
+ * Search for lyrics patterns in raw bytes
+ */
+function searchForLyricsPattern(bytes, patterns) {
+    // Convert bytes to string for searching (handle UTF-8)
+    // We search in chunks to avoid memory issues with large files
+    const chunkSize = 1024 * 1024; // 1MB chunks
+    const maxSearchSize = Math.min(bytes.length, 10 * 1024 * 1024); // Limit to first 10MB
+    
+    for (let offset = 0; offset < maxSearchSize; offset += chunkSize) {
+        const end = Math.min(offset + chunkSize + 1000, maxSearchSize); // Overlap to catch split patterns
+        const chunk = bytes.slice(offset, end);
+        
+        // Try to decode as UTF-8
+        let text;
+        try {
+            text = new TextDecoder('utf-8', { fatal: false }).decode(chunk);
+        } catch (e) {
+            continue;
+        }
+        
+        for (const pattern of patterns) {
+            const patternIndex = text.indexOf(pattern);
+            if (patternIndex !== -1) {
+                console.log(`Found lyrics pattern: ${pattern} at position ${offset + patternIndex}`);
+                
+                // Extract lyrics content after the pattern
+                const startIndex = patternIndex + pattern.length;
+                let lyrics = '';
+                
+                // For Vorbis comments, find the end (null byte or next field)
+                // Lyrics can be quite long, search for reasonable end markers
+                const remaining = text.substring(startIndex);
+                
+                // Find end of lyrics - look for common terminators
+                let endIndex = remaining.length;
+                
+                // Check for null byte
+                const nullIndex = remaining.indexOf('\0');
+                if (nullIndex > 0 && nullIndex < endIndex) {
+                    endIndex = nullIndex;
+                }
+                
+                // Check for next Vorbis field (FIELDNAME=)
+                const nextFieldMatch = remaining.match(/\n[A-Z][A-Z0-9_]*=/);
+                if (nextFieldMatch && nextFieldMatch.index < endIndex) {
+                    endIndex = nextFieldMatch.index;
+                }
+                
+                lyrics = remaining.substring(0, endIndex).trim();
+                
+                // Validate it looks like lyrics
+                if (lyrics.length > 20 && 
+                    (lyrics.includes('\n') || lyrics.includes('[') || lyrics.length > 100)) {
+                    // Clean up any binary garbage at the end
+                    lyrics = lyrics.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+                    return lyrics;
+                }
+            }
+        }
+    }
+    
+    return null;
 }
 
 function handleCoverUpload(e) {
@@ -1090,13 +2202,20 @@ function splitLyricAndTranslation(text) {
     return { original: text, translation: '' };
 }
 
+/**
+ * Parse lyrics with improved translation detection
+ * Logic:
+ * 1. First detect if the file uses "dual-line" mode (same timestamp for original + translation)
+ * 2. If dual-line mode is detected, ALL single lines are treated as original only (no splitting)
+ * 3. If no dual-line pairs found, try to split single lines by delimiter/script detection
+ */
 function parseLyrics(lyricsText) {
     const lines = lyricsText.split('\n');
-    const lyrics = [];
-    let currentLyric = null;
+    
+    // First pass: collect all timestamped lines with their raw text
+    const timestampedLines = [];
     
     for (const line of lines) {
-        // Match LRC format [mm:ss.xx] or [mm:ss]
         const timeMatch = line.match(/\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\](.*)/);
         
         if (timeMatch) {
@@ -1107,21 +2226,93 @@ function parseLyrics(lyricsText) {
             const rawText = timeMatch[4].trim();
             
             if (rawText) {
-                // Try to split original and translation from the same line
-                const { original, translation } = splitLyricAndTranslation(rawText);
+                timestampedLines.push({ time, rawText, used: false });
+            }
+        }
+    }
+    
+    // Detect if file uses dual-line mode (check for any same-timestamp pairs)
+    let hasDualLineMode = false;
+    for (let i = 0; i < timestampedLines.length - 1; i++) {
+        const current = timestampedLines[i];
+        const next = timestampedLines[i + 1];
+        if (Math.abs(next.time - current.time) < 0.5) {
+            hasDualLineMode = true;
+            console.log('Detected dual-line lyrics mode (same timestamp pairs found)');
+            break;
+        }
+    }
+    
+    // Second pass: group same-timestamp lines and build lyrics array
+    const lyrics = [];
+    
+    for (let i = 0; i < timestampedLines.length; i++) {
+        const current = timestampedLines[i];
+        if (current.used) continue;
+        
+        // Check if next line has same timestamp (within 0.5 seconds)
+        const next = timestampedLines[i + 1];
+        
+        if (next && !next.used && Math.abs(next.time - current.time) < 0.5) {
+            // Same timestamp - first is original, second is translation
+            current.used = true;
+            next.used = true;
+            
+            lyrics.push({
+                time: current.time,
+                text: current.rawText,
+                translation: next.rawText
+            });
+        } else {
+            // Single line
+            current.used = true;
+            
+            if (hasDualLineMode) {
+                // Dual-line mode detected: don't split, treat as original only
+                lyrics.push({
+                    time: current.time,
+                    text: current.rawText,
+                    translation: ''
+                });
+            } else {
+                // No dual-line mode: try to split by delimiter/script
+                const { original, translation } = splitLyricAndTranslation(current.rawText);
+                lyrics.push({
+                    time: current.time,
+                    text: original,
+                    translation: translation
+                });
+            }
+        }
+    }
+    
+    // Third pass: check for non-timestamped lines as translations (only if not in dual-line mode)
+    if (!hasDualLineMode) {
+        let lyricIndex = 0;
+        for (const line of lines) {
+            const timeMatch = line.match(/\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/);
+            
+            if (timeMatch) {
+                // Find corresponding lyric entry
+                const minutes = parseInt(timeMatch[1]);
+                const seconds = parseInt(timeMatch[2]);
+                const ms = timeMatch[3] ? parseInt(timeMatch[3].padEnd(3, '0')) : 0;
+                const time = minutes * 60 + seconds + ms / 1000;
                 
-                // Check if this is a translation line (follows a lyric closely with same timestamp)
-                if (currentLyric && Math.abs(currentLyric.time - time) < 0.5 && !currentLyric.translation) {
-                    // This line has same timestamp, treat entire text as translation
-                    currentLyric.translation = rawText;
-                } else {
-                    currentLyric = { time, text: original, translation: translation };
-                    lyrics.push(currentLyric);
+                // Find the lyric with this time
+                for (let j = lyricIndex; j < lyrics.length; j++) {
+                    if (Math.abs(lyrics[j].time - time) < 0.5) {
+                        lyricIndex = j;
+                        break;
+                    }
+                }
+            } else if (line.trim() && lyricIndex < lyrics.length) {
+                // Non-timestamped line - might be translation for previous lyric
+                const currentLyric = lyrics[lyricIndex];
+                if (currentLyric && !currentLyric.translation) {
+                    currentLyric.translation = line.trim();
                 }
             }
-        } else if (line.trim() && currentLyric && !currentLyric.translation) {
-            // Non-timestamped line might be translation
-            currentLyric.translation = line.trim();
         }
     }
     
